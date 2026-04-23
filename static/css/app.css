@@ -1,0 +1,243 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    opacity: 1;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(148, 163, 184, 0.12);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.28);
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.import-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 1rem 1rem 0;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(187, 247, 208, 0.45), transparent 30rem),
+        radial-gradient(circle at 80% 70%, rgba(226, 232, 240, 0.65), transparent 26rem),
+        rgba(15, 23, 42, 0.18);
+    opacity: 0;
+    backdrop-filter: blur(10px);
+    transition: opacity 220ms ease;
+}
+
+.import-loading-overlay.hidden {
+    display: none;
+}
+
+.import-loading-overlay.is-visible {
+    opacity: 1;
+}
+
+.import-loading-panel {
+    width: min(100%, 34rem);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    border-radius: 2rem;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(240, 253, 244, 0.9)),
+        #ffffff;
+    box-shadow: 0 30px 80px -45px rgba(15, 23, 42, 0.55);
+    padding: 1.5rem;
+    transform: translateY(-12px) scale(0.98);
+    transition: transform 260ms ease;
+}
+
+.import-loading-overlay.is-visible .import-loading-panel {
+    transform: translateY(0) scale(1);
+}
+
+.import-loading-orbit {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 5.5rem;
+    height: 5.5rem;
+    margin-inline: auto;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(220, 252, 231, 0.95), rgba(255, 255, 255, 0.92));
+    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.12), 0 18px 40px -24px rgba(22, 163, 74, 0.85);
+}
+
+.import-loading-orbit::before {
+    content: "";
+    position: absolute;
+    inset: 0.5rem;
+    border-radius: inherit;
+    border: 3px solid rgba(22, 163, 74, 0.14);
+    border-top-color: rgba(22, 163, 74, 0.86);
+    animation: import-spin 1s linear infinite;
+}
+
+.import-loading-orbit span {
+    position: absolute;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 999px;
+    background: #16a34a;
+    animation: import-pulse 1.5s ease-in-out infinite;
+}
+
+.import-loading-orbit span:nth-child(1) {
+    transform: translate(-1.25rem, -0.75rem);
+}
+
+.import-loading-orbit span:nth-child(2) {
+    transform: translate(1.25rem, -0.2rem);
+    animation-delay: 160ms;
+}
+
+.import-loading-orbit span:nth-child(3) {
+    transform: translate(0.15rem, 1.25rem);
+    animation-delay: 320ms;
+}
+
+.import-loading-step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.78);
+    padding: 0.75rem;
+}
+
+.import-loading-step span {
+    width: 0.55rem;
+    height: 0.55rem;
+    flex: none;
+    border-radius: 999px;
+    background: #cbd5e1;
+}
+
+.import-loading-step.is-active {
+    border-color: rgba(34, 197, 94, 0.32);
+    background: rgba(240, 253, 244, 0.94);
+    color: #14532d;
+}
+
+.import-loading-step.is-active span {
+    background: #16a34a;
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.13);
+}
+
+.import-loading-step.is-complete span {
+    background: #22c55e;
+}
+
+.app-toast-enter {
+    animation: toast-pop 180ms ease-out;
+}
+
+.page-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 1rem 1rem 0;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(187, 247, 208, 0.34), transparent 28rem),
+        radial-gradient(circle at 80% 70%, rgba(226, 232, 240, 0.62), transparent 24rem),
+        rgba(15, 23, 42, 0.12);
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    transition: opacity 180ms ease;
+}
+
+.page-transition-overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.page-transition-panel {
+    width: min(100%, 24rem);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 1.75rem;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(240, 253, 244, 0.92));
+    padding: 1.5rem;
+    box-shadow: 0 30px 80px -45px rgba(15, 23, 42, 0.55);
+    transform: translateY(-12px) scale(0.98);
+    transition: transform 220ms ease;
+}
+
+.page-transition-overlay.is-visible .page-transition-panel {
+    transform: translateY(0) scale(1);
+}
+
+.alert-slide-panel {
+    transform: translateY(-14px) scale(0.985);
+    transition: transform 240ms ease, opacity 240ms ease;
+}
+
+.alert-slide-panel.is-visible {
+    transform: translateY(0) scale(1);
+}
+
+.brand-mark {
+    width: 3rem;
+    height: 3rem;
+    flex: none;
+}
+
+.brand-mark-large {
+    width: 4.5rem;
+    height: 4.5rem;
+}
+
+.brand-glow {
+    position: absolute;
+    inset: auto;
+    border-radius: 999px;
+    filter: blur(36px);
+    opacity: 0.55;
+}
+
+@keyframes toast-pop {
+    from {
+        transform: translateY(-8px) scale(0.98);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes import-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes import-pulse {
+    0%, 100% {
+        opacity: 0.38;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}

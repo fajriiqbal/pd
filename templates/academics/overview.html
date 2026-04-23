@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Kelas dan Rombel | PDM{% endblock %}
+{% block page_kicker %}Data Siswa{% endblock %}
+{% block page_title %}Kelas dan rombel{% endblock %}
+{% block page_description %}Kelola struktur kelas, rombel, dan wali kelas dalam konteks data siswa agar penataannya lebih rapi.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="grid gap-4 sm:grid-cols-3">
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Kelas</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ class_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Rombel</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ study_group_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Wali kelas</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ homeroom_count }}</p>
+        </article>
+    </div>
+
+    <div class="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white p-5 shadow-soft lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-2xl">
+            <p class="text-sm text-slate-500">Struktur siswa</p>
+            <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Atur kelas dan rombel</h2>
+        </div>
+        <div class="w-full space-y-3 lg:max-w-2xl">
+            <form method="get">
+                <label for="search-academics" class="sr-only">Cari kelas atau rombel</label>
+                <input
+                    id="search-academics"
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="Cari kelas, rombel, atau wali kelas"
+                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-brand-500 focus:outline-none"
+                >
+            </form>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <a href="{% url 'academics:class_add' %}" class="rounded-2xl bg-slate-950 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-slate-800">Tambah kelas</a>
+                <a href="{% url 'academics:group_add' %}" class="rounded-2xl border border-slate-300 px-4 py-3 text-center text-sm font-medium text-slate-700 transition hover:bg-slate-50">Tambah rombel</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-6 2xl:grid-cols-[0.78fr_1.22fr]">
+        <section class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold tracking-tight text-slate-950">Daftar kelas</h2>
+                <a href="{% url 'academics:class_add' %}" class="text-sm text-slate-500 transition hover:text-slate-900">Tambah</a>
+            </div>
+            <div class="space-y-3">
+                {% for school_class in classes %}
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="font-medium text-slate-900">{{ school_class.name }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ school_class.description|default:"Belum ada deskripsi." }}</p>
+                            </div>
+                            <span class="text-sm font-medium text-slate-400">{{ school_class.active_group_count }}</span>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <a href="{% url 'academics:class_detail' school_class.pk %}" class="rounded-full border border-emerald-300 px-3 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50">View</a>
+                            <a href="{% url 'academics:class_edit' school_class.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-white">Edit</a>
+                            <a href="{% url 'academics:class_delete' school_class.pk %}" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50">Hapus</a>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-500">Belum ada data kelas.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold tracking-tight text-slate-950">Daftar rombel</h2>
+                <a href="{% url 'academics:group_add' %}" class="text-sm text-slate-500 transition hover:text-slate-900">Tambah</a>
+            </div>
+            <div class="overflow-hidden rounded-3xl border border-slate-100">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Rombel</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Kelas</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tahun</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Wali</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for group in study_groups %}
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 font-medium text-slate-900">{{ group.name }}</td>
+                                    <td class="px-6 py-4 text-slate-600">{{ group.school_class.name }}</td>
+                                    <td class="px-6 py-4 text-slate-600">{{ group.academic_year.name }}</td>
+                                    <td class="px-6 py-4 text-slate-600">{{ group.homeroom_teacher.user.full_name|default:"Belum diisi" }}</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-2">
+                                            <a href="{% url 'academics:group_detail' group.pk %}" class="rounded-full border border-emerald-300 px-3 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50">View</a>
+                                            <a href="{% url 'academics:group_edit' group.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-white">Edit</a>
+                                            <a href="{% url 'academics:group_delete' group.pk %}" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50">Hapus</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="px-6 py-8 text-center text-sm text-slate-500">Belum ada data rombel yang cocok dengan pencarian.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+
+{% block title %}Profil Guru | PDM{% endblock %}
+{% block page_kicker %}Modul Guru{% endblock %}
+{% block page_title %}Profil guru {{ teacher.user.full_name }}{% endblock %}
+{% block page_description %}Kelola data diri, riwayat pendidikan, dan data pengajar dari satu halaman monitoring operator.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Profil guru</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{{ teacher.user.full_name }}</h2>
+                <p class="mt-2 text-sm text-slate-500">
+                    {% if teacher.nip %}NIP {{ teacher.nip }}{% else %}NIP belum diisi{% endif %} · {{ teacher.get_employment_status_display }}
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2" role="tablist" aria-label="Menu profil guru">
+                <a href="{% url 'teachers:mutation_list' %}" class="rounded-full border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50">
+                    Mutasi guru
+                </a>
+                <a href="{% url 'teachers:archive_list' %}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                    Arsip guru
+                </a>
+                <button type="button" data-tab-target="data-diri" class="teacher-tab rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" aria-selected="true">
+                    Data diri
+                </button>
+                <button type="button" data-tab-target="pendidikan" class="teacher-tab rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" aria-selected="false">
+                    Pendidikan
+                </button>
+                <button type="button" data-tab-target="pengajar" class="teacher-tab rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" aria-selected="false">
+                    Pengajar
+                </button>
+                <button type="button" data-tab-target="tugas" class="teacher-tab rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" aria-selected="false">
+                    Tugas tambahan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-4">
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Username</p>
+            <p class="mt-3 text-lg font-semibold tracking-tight text-slate-950">{{ teacher.user.username }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Mapel aktif</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ teaching_assignment_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">JTM aktif</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ teaching_hours }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Tugas tambahan</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ additional_task_count }}</p>
+        </article>
+    </div>
+
+    <section id="data-diri" data-teacher-panel class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+        <div class="mb-4 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Data Diri</p>
+                <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Biodata dan akun guru</h2>
+            </div>
+            <a href="{% url 'teachers:list' %}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Kembali</a>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            <input type="hidden" name="form_type" value="data_diri">
+
+            <div class="grid gap-4 md:grid-cols-2">
+                {% for field in form %}
+                    <div class="{% if field.name in checkbox_fields %}rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 md:col-span-2{% endif %}">
+                        {% if field.name in checkbox_fields %}
+                            <label for="{{ field.id_for_label }}" class="flex items-start gap-3">
+                                {{ field }}
+                                <span>
+                                    <span class="block text-sm font-medium text-slate-900">{{ field.label }}</span>
+                                    <span class="mt-1 block text-sm text-slate-500">
+                                        {% if field.help_text %}{{ field.help_text }}{% else %}Aktifkan bila data masih berlaku.{% endif %}
+                                    </span>
+                                </span>
+                            </label>
+                        {% else %}
+                            <label for="{{ field.id_for_label }}" class="text-sm font-medium text-slate-700">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <p class="mt-1 text-sm text-slate-500">{{ field.help_text }}</p>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if field.errors %}
+                            <div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="border-t border-slate-200 pt-4">
+                <button type="submit" class="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800">
+                    Simpan data diri
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section id="pendidikan" data-teacher-panel hidden class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+        <div class="mb-4">
+            <p class="text-sm font-semibold uppercase tracking-[0.16em] text-sky-700">Data Pendidikan</p>
+            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Riwayat ijazah per jenjang</h2>
+            <p class="mt-1 text-sm text-slate-500">Tambah jenjang pendidikan yang sudah dilalui untuk monitoring kelengkapan dokumen guru.</p>
+        </div>
+
+        <form method="post" action="{% url 'teachers:education_add' teacher.pk %}" enctype="multipart/form-data" class="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+            {% csrf_token %}
+            {% for field in education_form.hidden_fields %}
+                {{ field }}
+            {% endfor %}
+
+            <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                <label for="{{ education_form.reference_query.id_for_label }}" class="text-sm font-medium text-slate-700">{{ education_form.reference_query.label }}</label>
+                {{ education_form.reference_query }}
+                {% if education_form.reference_query.help_text %}
+                    <p class="mt-1 text-sm text-slate-500">{{ education_form.reference_query.help_text }}</p>
+                {% endif %}
+                <div data-school-results class="mt-3 space-y-2"></div>
+                <div data-school-selected class="mt-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                    Pilih sekolah/madrasah dari hasil pencarian.
+                </div>
+            </div>
+
+            {% for field in education_form.visible_fields %}
+                {% if field.name != "reference_query" %}
+                    <div class="{% if field.name == 'is_highest_degree' %}md:col-span-2 rounded-2xl border border-slate-200 bg-white px-4 py-3{% endif %}{% if field.name == 'certificate_file' %}md:col-span-2 rounded-2xl border border-slate-200 bg-white px-4 py-3{% endif %}">
+                        {% if field.name == "is_highest_degree" %}
+                            <label for="{{ field.id_for_label }}" class="flex items-start gap-3">
+                                {{ field }}
+                                <span>
+                                    <span class="block text-sm font-medium text-slate-900">{{ field.label }}</span>
+                                    <span class="mt-1 block text-sm text-slate-500">Tandai ijazah tertinggi agar monitoring operator lebih cepat.</span>
+                                </span>
+                            </label>
+                        {% elif field.name == "certificate_file" %}
+                            <label for="{{ field.id_for_label }}" class="text-sm font-medium text-slate-700">{{ field.label }}</label>
+                            {{ field }}
+                            <p class="mt-1 text-sm text-slate-500">Unggah scan ijazah atau sertifikat dalam format PDF, JPG, atau PNG.</p>
+                        {% else %}
+                            <label for="{{ field.id_for_label }}" class="text-sm font-medium text-slate-700">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <p class="mt-1 text-sm text-slate-500">{{ field.help_text }}</p>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if field.errors %}
+                            <div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <div class="md:col-span-2">
+                <button type="submit" class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800">
+                    Tambah pendidikan
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-5 space-y-3">
+            {% for edu in education_histories %}
+                <details class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <summary class="cursor-pointer list-none">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-slate-900">{{ edu.get_degree_level_display }} - {{ edu.institution_name }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ edu.major|default:"Jurusan belum diisi" }}{% if edu.graduation_year %} - Lulus {{ edu.graduation_year }}{% endif %}</p>
+                                <p class="mt-1 text-xs text-slate-400">
+                                    {% if edu.institution_npsn %}NPSN {{ edu.institution_npsn }}{% endif %}
+                                    {% if edu.institution_status %} · {{ edu.institution_status }}{% endif %}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                {% if edu.is_highest_degree %}
+                                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Ijazah tertinggi</span>
+                                {% endif %}
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Klik untuk edit</span>
+                            </div>
+                        </div>
+                    </summary>
+
+                    <form method="post" action="{% url 'teachers:education_edit' teacher.pk edu.pk %}" enctype="multipart/form-data" class="mt-4 grid gap-3 border-t border-slate-100 pt-4 md:grid-cols-2">
+                        {% csrf_token %}
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Jenjang</label>
+                            <select name="degree_level" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                                {% for value, label in education_degree_choices %}
+                                    <option value="{{ value }}" {% if edu.degree_level == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Institusi</label>
+                            <input name="institution_name" value="{{ edu.institution_name }}" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Jurusan</label>
+                            <input name="major" value="{{ edu.major }}" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Tahun lulus</label>
+                            <input type="number" min="1950" max="2100" name="graduation_year" value="{{ edu.graduation_year|default:'' }}" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Nomor ijazah</label>
+                            <input name="certificate_number" value="{{ edu.certificate_number }}" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-sm font-medium text-slate-700">Scan ijazah</label>
+                            <input type="file" name="certificate_file" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                            {% if edu.certificate_file %}
+                                <a href="{{ edu.certificate_file.url }}" target="_blank" class="mt-2 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-800">Lihat file yang sudah diunggah</a>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Catatan</label>
+                            <input name="notes" value="{{ edu.notes }}" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                        </div>
+                        <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <label class="flex items-center gap-3 text-sm text-slate-700">
+                                <input type="checkbox" name="is_highest_degree" class="h-4 w-4 rounded border-slate-300 text-slate-900" {% if edu.is_highest_degree %}checked{% endif %}>
+                                Tandai sebagai ijazah tertinggi
+                            </label>
+                        </div>
+                        <div class="md:col-span-2 flex flex-wrap gap-2">
+                            <button type="submit" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                Update
+                            </button>
+                        </div>
+                    </form>
+                    <form method="post" action="{% url 'teachers:education_delete' teacher.pk edu.pk %}" class="mt-3">
+                        {% csrf_token %}
+                        <button type="submit" class="rounded-full border border-rose-300 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50">
+                            Hapus
+                        </button>
+                    </form>
+                    {% if edu.certificate_file %}
+                        <a href="{{ edu.certificate_file.url }}" target="_blank" class="mt-3 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-800">
+                            Buka scan ijazah
+                        </a>
+                    {% endif %}
+                </details>
+            {% empty %}
+                <p class="rounded-2xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">Belum ada riwayat pendidikan. Tambahkan minimal jenjang terakhir agar monitoring lebih akurat.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section id="pengajar" data-teacher-panel hidden class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+        <div class="mb-4 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-700">Data Pengajar</p>
+                <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Mapel yang diampu dan kelas</h2>
+            </div>
+            <a href="{% url 'teachers:teaching_assignments' %}?q={{ teacher.user.full_name|urlencode }}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                Kelola mapel guru
+            </a>
+        </div>
+
+        <div class="overflow-hidden rounded-3xl border border-slate-100">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Kelas</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Mapel</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">KKM</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">JTM</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for item in teaching_assignments %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4 text-slate-700">{{ item.school_class.name }}</td>
+                                <td class="px-6 py-4">
+                                    <p class="font-medium text-slate-900">{{ item.subject.name }}</p>
+                                    <p class="text-xs text-slate-400">{{ item.subject.get_curriculum_display }}</p>
+                                </td>
+                                <td class="px-6 py-4 text-slate-700">{{ item.minimum_score }}</td>
+                                <td class="px-6 py-4 text-slate-700">{{ item.weekly_hours }}</td>
+                                <td class="px-6 py-4">
+                                    {% if item.is_active %}
+                                        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Aktif</span>
+                                    {% else %}
+                                        <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">Nonaktif</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <a href="{% url 'teachers:teaching_assignment_edit' item.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-white">Edit</a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-6 py-8 text-center text-sm text-slate-500">Belum ada mapel yang diampu untuk guru ini.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="tugas" data-teacher-panel hidden class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+        <div class="mb-4 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.16em] text-sky-700">Tugas Tambahan</p>
+                <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Amanah tambahan guru ini</h2>
+            </div>
+            <a href="{% url 'teachers:additional_tasks' %}?q={{ teacher.user.full_name|urlencode }}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                Kelola tugas
+            </a>
+        </div>
+
+        <div class="grid gap-3">
+            {% for task in active_additional_tasks %}
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p class="font-semibold text-slate-900">{{ task.name }}</p>
+                            <p class="mt-1 text-sm text-slate-500">{{ task.get_task_type_display }} · {{ task.hours_per_week }} JTM</p>
+                        </div>
+                        {% if task.is_active %}
+                            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Aktif</span>
+                        {% endif %}
+                    </div>
+                    {% if task.description %}
+                        <p class="mt-2 text-sm text-slate-500">{{ task.description }}</p>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <p class="rounded-2xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">Belum ada tugas tambahan aktif untuk guru ini.</p>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+
+<script>
+(() => {
+    const tabs = Array.from(document.querySelectorAll("[data-tab-target]"));
+    const panels = Array.from(document.querySelectorAll("[data-teacher-panel]"));
+    const schoolInput = document.querySelector("[data-school-search-input]");
+    const schoolResults = document.querySelector("[data-school-results]");
+    const schoolSelected = document.querySelector("[data-school-selected]");
+    const schoolNameField = document.querySelector("[data-school-name]");
+    const hiddenFields = {
+        institution_npsn: document.querySelector("[name='institution_npsn']"),
+        institution_level: document.querySelector("[name='institution_level']"),
+        institution_status: document.querySelector("[name='institution_status']"),
+        institution_address: document.querySelector("[name='institution_address']"),
+        institution_source_url: document.querySelector("[name='institution_source_url']"),
+    };
+    if (!tabs.length || !panels.length) {
+        return;
+    }
+
+    const activateTab = (targetId) => {
+        panels.forEach((panel) => {
+            panel.hidden = panel.id !== targetId;
+        });
+
+        tabs.forEach((tab) => {
+            const active = tab.dataset.tabTarget === targetId;
+            tab.setAttribute("aria-selected", active ? "true" : "false");
+            tab.classList.toggle("bg-slate-950", active);
+            tab.classList.toggle("text-white", active);
+            tab.classList.toggle("border-slate-950", active);
+            tab.classList.toggle("text-slate-700", !active);
+        });
+    };
+
+    tabs.forEach((tab) => {
+        tab.addEventListener("click", () => activateTab(tab.dataset.tabTarget));
+    });
+
+    activateTab("data-diri");
+
+    if (schoolInput && schoolResults && schoolSelected && schoolNameField) {
+        let timer = null;
+
+        const escapeHtml = (value) =>
+            String(value || "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#39;");
+
+        const setSelectedSchool = (school) => {
+            schoolNameField.value = school.name || "";
+            hiddenFields.institution_npsn.value = school.npsn || "";
+            hiddenFields.institution_level.value = school.level || "";
+            hiddenFields.institution_status.value = school.status || "";
+            hiddenFields.institution_address.value = [school.address, school.village].filter(Boolean).join(", ");
+            hiddenFields.institution_source_url.value = school.source_url || "";
+            schoolSelected.innerHTML = `
+                <p class="font-medium text-slate-900">${escapeHtml(school.name)}</p>
+                <p class="mt-1 text-sm text-slate-500">NPSN ${escapeHtml(school.npsn || "-")} · ${escapeHtml(school.status || "-")}</p>
+                <p class="mt-1 text-sm text-slate-500">${escapeHtml([school.address, school.village].filter(Boolean).join(", ") || "-")}</p>
+            `;
+        };
+
+        const renderResults = (results) => {
+            if (!results.length) {
+                schoolResults.innerHTML = '<p class="rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500">Tidak ada hasil yang cocok.</p>';
+                return;
+            }
+
+            schoolResults.innerHTML = results
+                .map((school) => `
+                    <button type="button" data-school-item class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-slate-300 hover:bg-white"
+                        data-school="${encodeURIComponent(JSON.stringify(school))}" >
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-slate-900">${escapeHtml(school.name)}</p>
+                                <p class="mt-1 text-sm text-slate-500">NPSN ${escapeHtml(school.npsn || "-")} · ${escapeHtml(school.status || "-")}</p>
+                                <p class="mt-1 text-sm text-slate-500">${escapeHtml([school.address, school.village].filter(Boolean).join(", ") || "-")}</p>
+                            </div>
+                            <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">Pilih</span>
+                        </div>
+                    </button>
+                `)
+                .join("");
+
+            schoolResults.querySelectorAll("[data-school-item]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const school = JSON.parse(decodeURIComponent(button.dataset.school));
+                    setSelectedSchool(school);
+                    schoolResults.innerHTML = "";
+                    schoolInput.value = school.name || "";
+                });
+            });
+        };
+
+        const fetchSchools = async (query) => {
+            if (query.trim().length < 2) {
+                schoolResults.innerHTML = "";
+                return;
+            }
+
+            schoolResults.innerHTML = '<p class="rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500">Mencari sekolah/madrasah...</p>';
+            const response = await fetch(`{% url 'teachers:school_reference_search' %}?q=${encodeURIComponent(query)}`);
+            const payload = await response.json();
+            renderResults(payload.results || []);
+        };
+
+        schoolInput.addEventListener("input", () => {
+            clearTimeout(timer);
+            const query = schoolInput.value;
+            if (!query.trim()) {
+                schoolResults.innerHTML = "";
+                schoolSelected.innerHTML = 'Pilih sekolah/madrasah dari hasil pencarian.';
+                Object.values(hiddenFields).forEach((field) => {
+                    if (field) {
+                        field.value = "";
+                    }
+                });
+                return;
+            }
+
+            timer = setTimeout(() => {
+                fetchSchools(query).catch(() => {
+                    schoolResults.innerHTML = '<p class="rounded-2xl border border-dashed border-rose-300 px-4 py-3 text-sm text-rose-700">Pencarian sekolah gagal dimuat.</p>';
+                });
+            }, 300);
+        });
+    }
+})();
+</script>
+{% endblock %}

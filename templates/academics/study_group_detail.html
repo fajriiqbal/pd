@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Detail Rombel {{ study_group.name }} | PDM{% endblock %}
+{% block page_kicker %}Kelas & Rombel{% endblock %}
+{% block page_title %}Rombel {{ study_group.name }}{% endblock %}
+{% block page_description %}Pusat kontrol kelas untuk wali kelas, data siswa, kapasitas, dan kesiapan modul raport.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft">
+        <div class="bg-[linear-gradient(135deg,#0f172a,#14532d)] px-6 py-7 text-white">
+            <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-200">Pusat rombel</p>
+                    <h2 class="mt-3 text-3xl font-black tracking-tight">{{ study_group.name }}</h2>
+                    <p class="mt-2 max-w-2xl text-sm text-emerald-50">
+                        {{ study_group.school_class.name }} - Tahun ajaran {{ study_group.academic_year.name }}
+                    </p>
+                </div>
+                <div class="flex flex-col gap-2 sm:flex-row">
+                    <a href="{% url 'academics:overview' %}" class="rounded-2xl border border-white/30 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10">Kembali</a>
+                    <a href="{% url 'academics:group_edit' study_group.pk %}" class="rounded-2xl bg-white px-5 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-emerald-50">Edit rombel</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-3 p-6 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-2xl bg-slate-100 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Siswa aktif</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ active_student_count }}</p>
+            </div>
+            <div class="rounded-2xl bg-emerald-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-emerald-700">Kapasitas</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ active_student_count }} / {{ study_group.capacity }}</p>
+                <div class="mt-3 h-2 overflow-hidden rounded-full bg-emerald-100">
+                    <div class="h-full rounded-full bg-emerald-600" style="width: {{ capacity_percent }}%"></div>
+                </div>
+            </div>
+            <div class="rounded-2xl bg-sky-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-sky-700">Wali kelas</p>
+                <p class="mt-2 text-lg font-semibold text-slate-950">{{ study_group.homeroom_teacher.user.full_name|default:"Belum diisi" }}</p>
+            </div>
+            <div class="rounded-2xl bg-amber-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-amber-700">Perlu dilengkapi</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ missing_nis_count|add:missing_nisn_count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[1fr_0.8fr]">
+        <div class="rounded-[2rem] border border-white/70 bg-white p-6 shadow-soft">
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Profil kelas</p>
+                    <h2 class="mt-1 text-xl font-black tracking-tight text-slate-950">Informasi rombel</h2>
+                </div>
+                {% if study_group.is_active %}
+                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Rombel aktif</span>
+                {% else %}
+                    <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">Rombel nonaktif</span>
+                {% endif %}
+            </div>
+
+            <div class="mt-5 grid gap-3 md:grid-cols-2">
+                <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Ruang</p>
+                    <p class="mt-2 font-semibold text-slate-900">{{ study_group.room_name|default:"Belum diisi" }}</p>
+                </div>
+                <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Kursi kosong</p>
+                    <p class="mt-2 font-semibold text-slate-900">{{ available_seats }} siswa</p>
+                </div>
+                <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Laki-laki</p>
+                    <p class="mt-2 font-semibold text-slate-900">{{ male_count }} siswa</p>
+                </div>
+                <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Perempuan</p>
+                    <p class="mt-2 font-semibold text-slate-900">{{ female_count }} siswa</p>
+                </div>
+            </div>
+
+            <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
+                <p class="text-sm font-semibold text-slate-900">Catatan rombel</p>
+                <p class="mt-2 text-sm text-slate-500">{{ study_group.notes|default:"Belum ada catatan khusus untuk rombel ini." }}</p>
+            </div>
+        </div>
+
+        <div class="rounded-[2rem] border border-emerald-100 bg-[linear-gradient(135deg,#ecfdf5,#f8fafc)] p-6 shadow-soft">
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Menu akademik</p>
+            <h2 class="mt-2 text-xl font-black tracking-tight text-slate-950">Siap untuk raport</h2>
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                {% for tool in academic_tools %}
+                    <div class="rounded-2xl bg-white/85 px-4 py-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <p class="font-semibold text-slate-900">{{ tool.title }}</p>
+                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{{ tool.status }}</span>
+                        </div>
+                        <p class="mt-2 text-sm text-slate-500">{{ tool.description }}</p>
+                        {% if tool.url %}
+                            <a href="{{ tool.url }}" class="mt-3 inline-flex rounded-full border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50">Buka</a>
+                        {% elif tool.url_name %}
+                            <a href="{% url tool.url_name %}" class="mt-3 inline-flex rounded-full border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50">Buka</a>
+                        {% else %}
+                            <span class="mt-3 inline-flex rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">Belum aktif</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft">
+        <div class="flex flex-col gap-2 border-b border-slate-100 px-6 py-5 md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Anggota kelas</p>
+                <h2 class="mt-1 text-xl font-black tracking-tight text-slate-950">Daftar siswa rombel {{ study_group.name }}</h2>
+            </div>
+            {% if user.is_superuser or user.role == 'admin' %}
+                <a href="{% url 'students:list' %}?class={{ study_group.school_class_id }}&study_group={{ study_group.pk }}" class="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Buka di data siswa</a>
+            {% endif %}
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Nama</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">NIS</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">NISN</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">JK</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for student in students %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4">
+                                <p class="font-semibold text-slate-900">{{ student.user.full_name }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ student.user.username }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">{{ student.nis|default:"Belum diisi" }}</td>
+                            <td class="px-6 py-4 text-slate-600">{{ student.nisn|default:"Belum diisi" }}</td>
+                            <td class="px-6 py-4 text-slate-600">{{ student.get_gender_display }}</td>
+                            <td class="px-6 py-4">
+                                {% if student.is_active %}
+                                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Aktif</span>
+                                {% else %}
+                                    <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">Nonaktif</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if can_edit_students %}
+                                    <a href="{% url 'students:edit' student.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-white">Edit siswa</a>
+                                {% else %}
+                                    <span class="text-xs font-medium text-slate-400">Hanya admin/wali kelas</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-sm text-slate-500">Belum ada siswa di rombel ini.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

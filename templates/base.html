@@ -1,0 +1,354 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PDM{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: "#f0fdf4",
+                            100: "#dcfce7",
+                            500: "#22c55e",
+                            600: "#16a34a",
+                            700: "#15803d",
+                            900: "#14532d"
+                        }
+                    },
+                    boxShadow: {
+                        soft: "0 18px 40px -28px rgba(15, 23, 42, 0.22)"
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="icon" href="{% static 'img/madrasah-logo.svg' %}" type="image/svg+xml">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="min-h-screen bg-[#f5f5f7] text-slate-800 transition-opacity duration-200">
+    <div id="page-transition-overlay" class="page-transition-overlay hidden" aria-hidden="true">
+        <div class="page-transition-panel">
+            <div class="flex items-center gap-4">
+                <img src="{% static 'img/madrasah-logo.svg' %}" alt="Logo PDM" class="brand-mark">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">PDM</p>
+                    <p class="mt-1 text-sm text-slate-500">Memuat halaman dengan aman dan rapi...</p>
+                </div>
+            </div>
+            <div class="mt-5 flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse [animation-delay:120ms]"></span>
+                <span class="h-2.5 w-2.5 rounded-full bg-emerald-300 animate-pulse [animation-delay:240ms]"></span>
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+        <div class="min-h-screen">
+            <div class="mx-auto flex min-h-screen max-w-[1600px] flex-col lg:flex-row">
+                <aside class="border-b border-[#d7ddd8] bg-[linear-gradient(180deg,_rgba(232,238,234,0.96),_rgba(222,230,225,0.92))] backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:w-[255px] lg:overflow-y-auto lg:border-b-0 lg:border-r">
+                    <div class="flex h-full flex-col px-4 py-5">
+                        <div class="px-3 pb-5">
+                                <a href="{% url 'dashboard:home' %}" class="flex items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-white/55">
+                                    <img src="{% static 'img/madrasah-logo.svg' %}" alt="Logo PDM" class="brand-mark">
+                                    <span>
+                                    <span class="block text-sm font-semibold tracking-tight text-slate-900">PDM</span>
+                                    <span class="mt-1 block text-xs text-slate-500">Pusat Data Madsuka</span>
+                                    </span>
+                                </a>
+                        </div>
+
+                        <nav class="space-y-1">
+                            {% if user.is_superuser or user.role == 'admin' %}
+                                <a href="{% url 'dashboard:workflow' %}" class="{% if '/workflow/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                    Flow pengerjaan
+                                </a>
+                                <a href="{% url 'dashboard:home' %}" class="{% if request.path == '/' %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                    Dashboard
+                                </a>
+                                <a href="{% url 'academics:year_list' %}" class="{% if '/academics/years/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                    Tahun Ajaran
+                                </a>
+                                <details class="rounded-[24px] {% if '/students/' in request.path or '/academics/' in request.path and '/academics/years/' not in request.path %}bg-white/55{% endif %} p-1" {% if '/students/' in request.path or '/academics/' in request.path and '/academics/years/' not in request.path %}open{% endif %}>
+                                    <summary class="cursor-pointer list-none rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 transition hover:text-slate-900">
+                                        Data Siswa
+                                    </summary>
+                                    <div class="space-y-1 px-2 pb-2">
+                                        <a href="{% url 'students:list' %}" class="{% if '/students/' in request.path and '/students/promotions/' not in request.path and '/students/mutations/' not in request.path and '/students/alumni/' not in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Data siswa</a>
+                                        <a href="{% url 'students:alumni_list' %}" class="{% if '/students/alumni/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Alumni</a>
+                                        <a href="{% url 'students:alumni_validation_list' %}" class="{% if '/students/alumni/validations/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Validasi ijazah</a>
+                                        <a href="{% url 'students:mutation_list' %}" class="{% if '/students/mutations/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Mutasi siswa</a>
+                                        <a href="{% url 'students:promotion_list' %}" class="{% if '/students/promotions/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Kenaikan kelas</a>
+                                        <a href="{% url 'academics:overview' %}" class="{% if '/academics/' in request.path and '/academics/years/' not in request.path and '/academics/subjects/' not in request.path and '/academics/class-subjects/' not in request.path and '/academics/ledgers/' not in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Kelas & rombel</a>
+                                        <a href="{% url 'academics:subject_list' %}" class="{% if '/academics/subjects/' in request.path or '/academics/class-subjects/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Mata pelajaran</a>
+                                        <a href="{% url 'academics:ledger_list' %}" class="{% if '/academics/ledgers/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Ledger nilai</a>
+                                    </div>
+                                </details>
+                                <details class="rounded-[24px] {% if '/teachers/' in request.path %}bg-white/55{% endif %} p-1" {% if '/teachers/' in request.path %}open{% endif %}>
+                                    <summary class="cursor-pointer list-none rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 transition hover:text-slate-900">
+                                        Data Guru
+                                    </summary>
+                                    <div class="space-y-1 px-2 pb-2">
+                                        <a href="{% url 'teachers:list' %}" class="{% if '/teachers/' in request.path and '/teachers/mutations/' not in request.path and '/teachers/archives/' not in request.path and '/teachers/teaching-assignments/' not in request.path and '/teachers/additional-tasks/' not in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Data guru</a>
+                                        <a href="{% url 'teachers:mutation_list' %}" class="{% if '/teachers/mutations/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Mutasi guru</a>
+                                        <a href="{% url 'teachers:archive_list' %}" class="{% if '/teachers/archives/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Arsip guru</a>
+                                        <a href="{% url 'teachers:teaching_assignments' %}" class="{% if '/teachers/teaching-assignments/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Mapel diajar</a>
+                                        <a href="{% url 'teachers:additional_tasks' %}" class="{% if '/teachers/additional-tasks/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Tugas tambahan</a>
+                                    </div>
+                                </details>
+                                <a href="{% url 'accounts:list' %}" class="{% if '/accounts/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                    Akun Pengguna
+                                </a>
+                            {% elif user.role == 'guru' %}
+                                <a href="{% url 'dashboard:home' %}" class="{% if request.path == '/' %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                    Dashboard
+                                </a>
+                                {% if user.profile_url %}
+                                    <a href="{{ user.profile_url }}" class="{% if '/teachers/' in request.path and '/teachers/mutations/' not in request.path and '/teachers/archives/' not in request.path and '/teachers/teaching-assignments/' not in request.path and '/teachers/additional-tasks/' not in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                        Profil Saya
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'teachers:teaching_assignments' %}" class="{% if '/teachers/teaching-assignments/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                    Mapel diajar
+                                </a>
+                                <a href="{% url 'teachers:additional_tasks' %}" class="{% if '/teachers/additional-tasks/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                    Tugas tambahan
+                                </a>
+                            {% elif user.role == 'siswa' %}
+                                <a href="{% url 'dashboard:home' %}" class="{% if request.path == '/' %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                    Dashboard
+                                </a>
+                                {% if user.profile_url %}
+                                    <a href="{{ user.profile_url }}" class="{% if '/students/' in request.path and '/students/promotions/' not in request.path and '/students/mutations/' not in request.path and '/students/alumni/' not in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
+                                        Profil Saya
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </nav>
+
+                        <div class="mt-auto pt-6">
+                            <form action="{% url 'logout' %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full rounded-2xl border border-[#cfd6d1] bg-white/55 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-white/80">
+                                    Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="flex-1">
+                    <header class="sticky top-0 z-10 border-b border-slate-200 bg-white/78 backdrop-blur">
+                        <div class="flex flex-col gap-3 px-4 py-3 md:px-8 xl:px-10 xl:py-3.5">
+                            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">{% block page_kicker %}PDM{% endblock %}</p>
+                                    <h1 class="mt-1.5 text-xl font-semibold tracking-tight text-slate-950 md:text-2xl">{% block page_title %}Pusat Data Madsuka{% endblock %}</h1>
+                                </div>
+                                <form action="{% url 'dashboard:search' %}" method="get" class="w-full max-w-md">
+                                    <label class="sr-only" for="global-search">Cari data</label>
+                                    <div class="flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/75 px-3 py-1.5 shadow-soft backdrop-blur">
+                                        <input id="global-search" name="q" type="search" value="{{ request.GET.q }}" placeholder="Cari siswa, guru, rombel..." class="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none">
+                                        <button type="submit" class="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800">Cari</button>
+                                    </div>
+                                </form>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <div class="rounded-full border border-slate-200/80 bg-white/75 px-3 py-1.5 text-sm text-slate-600 shadow-soft backdrop-blur">
+                                        <span class="font-medium text-slate-900">{{ user.full_name|default:user.username }}</span>
+                                        <span class="mx-2 text-slate-300">-</span>
+                                        <span>{{ user.get_role_display|default:"Admin" }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/85 px-3 py-1.5 text-sm font-medium text-emerald-700 shadow-soft backdrop-blur" data-connection-status data-connection-state="online" title="Memeriksa koneksi server">
+                                        <span class="inline-flex items-end gap-0.5" aria-hidden="true" data-connection-bars>
+                                            <span class="h-2 w-0.5 rounded-full bg-emerald-500"></span>
+                                            <span class="h-3 w-0.5 rounded-full bg-emerald-500"></span>
+                                            <span class="h-4 w-0.5 rounded-full bg-emerald-500"></span>
+                                            <span class="h-3 w-0.5 rounded-full bg-emerald-500"></span>
+                                        </span>
+                                        <span data-connection-label>Akun aktif</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main class="px-4 py-6 md:px-8 xl:px-10 xl:py-8">
+                        {% if messages %}
+                            <div class="fixed right-4 top-4 z-[100] flex w-[calc(100%-2rem)] max-w-md flex-col gap-3 md:right-6 md:top-6">
+                                {% for message in messages %}
+                                    <div class="app-toast-enter rounded-3xl border px-4 py-4 shadow-2xl {% if 'error' in message.tags %}border-rose-200 bg-rose-50 text-rose-800{% elif 'warning' in message.tags %}border-amber-200 bg-amber-50 text-amber-800{% else %}border-emerald-200 bg-emerald-50 text-emerald-800{% endif %}" data-toast>
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p class="text-xs font-semibold uppercase tracking-[0.2em] {% if 'error' in message.tags %}text-rose-600{% elif 'warning' in message.tags %}text-amber-600{% else %}text-emerald-600{% endif %}">
+                                                    {% if 'error' in message.tags %}Perhatian{% elif 'warning' in message.tags %}Peringatan{% else %}Notifikasi{% endif %}
+                                                </p>
+                                                <p class="mt-2 text-sm leading-6">{{ message }}</p>
+                                            </div>
+                                            <button type="button" class="text-base leading-none opacity-60 transition hover:opacity-100" data-toast-close aria-label="Tutup notifikasi">×</button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% block content %}{% endblock %}
+                    </main>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <script>
+        (() => {
+            document.body.classList.add("is-ready");
+
+            const connectionBadge = document.querySelector("[data-connection-status]");
+            const connectionLabel = document.querySelector("[data-connection-label]");
+            const connectionBars = document.querySelectorAll("[data-connection-bars] span");
+            const healthUrl = "{% url 'dashboard:health' %}";
+            let healthTimer = null;
+
+            const setConnectionState = (state) => {
+                if (!connectionBadge || !connectionLabel) {
+                    return;
+                }
+
+                const online = state === "online";
+                connectionBadge.dataset.connectionState = state;
+                connectionLabel.textContent = online ? "Aktif" : "Offline";
+                connectionBadge.classList.toggle("border-emerald-200", online);
+                connectionBadge.classList.toggle("bg-emerald-50/85", online);
+                connectionBadge.classList.toggle("text-emerald-700", online);
+                connectionBadge.classList.toggle("border-rose-200", !online);
+                connectionBadge.classList.toggle("bg-rose-50/85", !online);
+                connectionBadge.classList.toggle("text-rose-700", !online);
+
+                connectionBars.forEach((bar, index) => {
+                    const onlineHeights = ["h-2", "h-3", "h-4", "h-3"];
+                    const offlineHeights = ["h-2", "h-2", "h-2", "h-2"];
+                    bar.classList.remove("h-2", "h-3", "h-4");
+                    bar.classList.add(online ? onlineHeights[index] : offlineHeights[index]);
+                    bar.classList.toggle("bg-emerald-500", online);
+                    bar.classList.toggle("bg-rose-400", !online);
+                    bar.style.opacity = online ? String(0.55 + index * 0.12) : String(0.35 + index * 0.08);
+                    bar.style.transform = online ? "translateY(0)" : "translateY(1px)";
+                });
+            };
+
+            const checkHealth = async () => {
+                try {
+                    const response = await fetch(healthUrl, {
+                        method: "GET",
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                        credentials: "same-origin",
+                        cache: "no-store",
+                    });
+                    if (!response.ok) {
+                        throw new Error("health check failed");
+                    }
+                    setConnectionState("online");
+                } catch (error) {
+                    setConnectionState("offline");
+                }
+            };
+
+            const overlay = document.getElementById("page-transition-overlay");
+            let overlayTimer = null;
+            const showOverlay = (label) => {
+                if (!overlay) {
+                    return;
+                }
+                if (overlayTimer) {
+                    window.clearTimeout(overlayTimer);
+                    overlayTimer = null;
+                }
+                const message = overlay.querySelector("p.text-sm.text-slate-500");
+                if (message && label) {
+                    message.textContent = label;
+                }
+                overlay.classList.remove("hidden");
+                overlay.setAttribute("aria-hidden", "false");
+                window.requestAnimationFrame(() => overlay.classList.add("is-visible"));
+                overlayTimer = window.setTimeout(() => {
+                    hideOverlay();
+                }, 900);
+            };
+            const hideOverlay = () => {
+                if (!overlay) {
+                    return;
+                }
+                if (overlayTimer) {
+                    window.clearTimeout(overlayTimer);
+                    overlayTimer = null;
+                }
+                overlay.classList.remove("is-visible");
+                overlay.setAttribute("aria-hidden", "true");
+                window.setTimeout(() => overlay.classList.add("hidden"), 180);
+            };
+
+            document.querySelectorAll("[data-toast]").forEach((toast) => {
+                const close = toast.querySelector("[data-toast-close]");
+                const dismiss = () => {
+                    toast.style.transition = "opacity 180ms ease, transform 180ms ease";
+                    toast.style.opacity = "0";
+                    toast.style.transform = "translateY(-6px)";
+                    window.setTimeout(() => toast.remove(), 180);
+                };
+
+                if (close) {
+                    close.addEventListener("click", dismiss);
+                }
+                window.setTimeout(dismiss, 6000);
+            });
+
+            document.addEventListener("click", (event) => {
+                const link = event.target.closest("a[href]");
+                if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                    return;
+                }
+
+                const href = link.getAttribute("href") || "";
+                if (!href || href.startsWith("#") || href.startsWith("javascript:") || href.startsWith("mailto:") || href.startsWith("tel:")) {
+                    return;
+                }
+
+                const url = new URL(link.href, window.location.href);
+                const sameOrigin = url.origin === window.location.origin;
+                if (!sameOrigin || link.target === "_blank" || link.hasAttribute("download")) {
+                    return;
+                }
+
+                showOverlay("Membuka halaman berikutnya...");
+            });
+
+            document.addEventListener("submit", (event) => {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement) || form.hasAttribute("data-no-page-transition")) {
+                    return;
+                }
+
+                if (!form.checkValidity()) {
+                    return;
+                }
+
+                showOverlay("Menyimpan perubahan...");
+            });
+
+            window.addEventListener("pageshow", hideOverlay);
+            checkHealth();
+            healthTimer = window.setInterval(checkHealth, 15000);
+            window.addEventListener("beforeunload", () => {
+                if (healthTimer) {
+                    window.clearInterval(healthTimer);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

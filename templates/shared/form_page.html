@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} | PDM{% endblock %}
+{% block page_kicker %}{{ page_kicker }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_description %}{{ page_description }}{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-4xl">
+    <div class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft md:p-6">
+        {% if form.non_field_errors %}
+            <div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="{% if field.name in checkbox_fields %}rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5{% endif %}">
+                    {% if field.name in checkbox_fields %}
+                        <label for="{{ field.id_for_label }}" class="flex items-start gap-3">
+                            {{ field }}
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900">{{ field.label }}</span>
+                                <span class="mt-1 block text-sm leading-6 text-slate-500">
+                                    {% if field.help_text %}{{ field.help_text }}{% else %}Aktifkan bila data ini sedang digunakan oleh operator.{% endif %}
+                                </span>
+                            </span>
+                        </label>
+                    {% else %}
+                        <label for="{{ field.id_for_label }}" class="text-sm font-medium text-slate-700">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <p class="mt-1.5 text-sm leading-6 text-slate-500">{{ field.help_text }}</p>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if field.errors %}
+                        <div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+                            {{ field.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <div class="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
+                <button type="submit" class="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,_#1f9d55,_#157347)] px-5 py-2.5 text-sm font-medium text-white shadow-[0_12px_26px_-16px_rgba(21,115,71,0.75)] transition duration-200 hover:brightness-[1.03] hover:shadow-[0_16px_34px_-18px_rgba(21,115,71,0.85)]">
+                    {{ submit_label }}
+                </button>
+                <a href="{% url cancel_url %}" class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-2.5 text-center text-sm font-medium text-slate-600 transition duration-200 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900">
+                    Batal
+                </a>
+            </div>
+        </form>
+    </div>
+</section>
+
+{% if subject_presets %}
+    {{ subject_presets|json_script:"subject-presets-data" }}
+    <script>
+        (() => {
+            const presetSelect = document.querySelector("[data-subject-preset-select]");
+            const curriculumSelect = document.querySelector("[data-curriculum-select]");
+            if (!presetSelect || !curriculumSelect) {
+                return;
+            }
+
+            const presets = JSON.parse(document.getElementById("subject-presets-data").textContent);
+            const presetsByKey = Object.fromEntries(presets.map((preset) => [preset.key, preset]));
+            const fields = {
+                name: document.querySelector("[name='name']"),
+                code: document.querySelector("[name='code']"),
+                category: document.querySelector("[name='category']"),
+                description: document.querySelector("[name='description']"),
+                sort_order: document.querySelector("[name='sort_order']"),
+            };
+
+            function applyPreset() {
+                const preset = presetsByKey[presetSelect.value];
+                if (!preset) {
+                    return;
+                }
+
+                curriculumSelect.value = preset.curriculum;
+                for (const [fieldName, field] of Object.entries(fields)) {
+                    if (field && preset[fieldName] !== undefined) {
+                        field.value = preset[fieldName];
+                    }
+                }
+            }
+
+            function filterPresetOptions() {
+                const selectedCurriculum = curriculumSelect.value;
+                for (const option of presetSelect.options) {
+                    const preset = presetsByKey[option.value];
+                    option.hidden = Boolean(preset && preset.curriculum !== selectedCurriculum);
+                }
+
+                const selectedPreset = presetsByKey[presetSelect.value];
+                if (selectedPreset && selectedPreset.curriculum !== selectedCurriculum) {
+                    presetSelect.value = "";
+                }
+            }
+
+            curriculumSelect.addEventListener("change", filterPresetOptions);
+            presetSelect.addEventListener("change", applyPreset);
+            filterPresetOptions();
+        })();
+    </script>
+{% endif %}
+{% endblock %}

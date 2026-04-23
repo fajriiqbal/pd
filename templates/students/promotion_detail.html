@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Preview Kenaikan Kelas | PDM{% endblock %}
+{% block page_kicker %}{{ page_kicker }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_description %}{{ page_description }}{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="rounded-[2rem] border border-white/70 bg-white p-6 shadow-soft">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Preview batch</p>
+                <h2 class="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                    {{ promotion_run.source_academic_year.name }} ke {{ promotion_run.target_academic_year.name }}
+                </h2>
+                <p class="mt-2 text-sm text-slate-500">
+                    Cakupan:
+                    {% if promotion_run.source_study_group %}
+                        {{ promotion_run.source_study_group.name }}
+                    {% elif promotion_run.source_school_class %}
+                        {{ promotion_run.source_school_class.name }}
+                    {% else %}
+                        semua kelas pada tahun ajaran asal
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <a href="{% url 'students:promotion_list' %}" class="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    Kembali
+                </a>
+                {% if promotion_run.status == "executed" %}
+                    <span class="rounded-2xl bg-emerald-100 px-5 py-3 text-center text-sm font-semibold text-emerald-700">
+                        Sudah dijalankan
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="rounded-2xl bg-slate-100 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Total siswa</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ summary.total|default:0 }}</p>
+            </div>
+            <div class="rounded-2xl bg-emerald-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-emerald-700">Naik kelas</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ summary.promote|default:0 }}</p>
+            </div>
+            <div class="rounded-2xl bg-amber-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-amber-700">Tinggal</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ summary.repeat|default:0 }}</p>
+            </div>
+            <div class="rounded-2xl bg-sky-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-sky-700">Lulus</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ summary.graduate|default:0 }}</p>
+            </div>
+            <div class="rounded-2xl bg-rose-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-rose-700">Keluar/nonaktif</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ summary.transfer|default:0|add:summary.inactive|default:0 }}</p>
+            </div>
+        </div>
+    </div>
+
+    {% if errors %}
+        <div class="rounded-[2rem] border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700 shadow-soft">
+            <p class="font-semibold text-rose-800">Ada data yang perlu diperbaiki sebelum eksekusi</p>
+            <div class="mt-3 space-y-1">
+                {% for error in errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    {% if capacity_warnings %}
+        <div class="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800 shadow-soft">
+            <p class="font-semibold">Peringatan kapasitas rombel</p>
+            <div class="mt-3 space-y-1">
+                {% for warning in capacity_warnings %}
+                    <p>{{ warning }}</p>
+                {% endfor %}
+            </div>
+            <p class="mt-3 text-amber-700">Peringatan ini tidak memblokir eksekusi, tetapi sebaiknya dicek dulu sebelum final.</p>
+        </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'students:promotion_execute' promotion_run.pk %}" class="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft">
+        {% csrf_token %}
+        <div class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold text-slate-900">Keputusan per siswa</p>
+                <p class="mt-1 text-sm text-slate-500">Ubah status atau rombel tujuan bila rekomendasi sistem belum sesuai.</p>
+            </div>
+            {% if promotion_run.status == "draft" %}
+                <button type="submit" class="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
+                    Jalankan kenaikan kelas
+                </button>
+            {% endif %}
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Siswa</th>
+                        <th class="px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Rombel asal</th>
+                        <th class="px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Status</th>
+                        <th class="px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Rombel tujuan</th>
+                        <th class="px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Catatan</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for item in items %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-5 py-4">
+                                <p class="font-semibold text-slate-900">{{ item.student.user.full_name }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ item.student.nis|default:"NIS belum diisi" }}</p>
+                            </td>
+                            <td class="px-5 py-4 text-sm text-slate-600">
+                                {{ item.source_study_group.name|default:"-" }}
+                            </td>
+                            <td class="px-5 py-4">
+                                {% if promotion_run.status == "draft" %}
+                                    <select name="action_{{ item.pk }}" class="w-44 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:outline-none">
+                                        {% for value, label in action_choices %}
+                                            <option value="{{ value }}" {% if item.action == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                {% else %}
+                                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ item.get_action_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-5 py-4">
+                                {% if promotion_run.status == "draft" %}
+                                    <select name="target_group_{{ item.pk }}" class="w-56 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:outline-none">
+                                        <option value="">Tidak pakai rombel</option>
+                                        {% for group in target_group_options %}
+                                            <option value="{{ group.pk }}" {% if item.target_study_group_id == group.pk %}selected{% endif %}>
+                                                {{ group.school_class.name }} - {{ group.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                {% else %}
+                                    <span class="text-sm text-slate-600">{{ item.target_study_group.name|default:"-" }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-5 py-4">
+                                {% if promotion_run.status == "draft" %}
+                                    <input name="notes_{{ item.pk }}" value="{{ item.notes }}" class="w-64 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:outline-none" placeholder="Opsional">
+                                {% else %}
+                                    <span class="text-sm text-slate-600">{{ item.notes|default:"-" }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-sm text-slate-500">Tidak ada siswa dalam draft ini.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+</section>
+{% endblock %}

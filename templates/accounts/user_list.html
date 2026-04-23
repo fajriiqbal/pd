@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Daftar Akun | PDM{% endblock %}
+{% block page_kicker %}Manajemen Akses{% endblock %}
+{% block page_title %}Daftar akun pengguna{% endblock %}
+{% block page_description %}Kelola akun admin, guru, dan siswa dalam satu tampilan yang mudah dicari oleh operator.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="flex flex-col gap-4 rounded-[2rem] border border-white/70 bg-white p-6 shadow-soft">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="max-w-2xl">
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-brand-700">Akun Pengguna</p>
+                <h2 class="mt-2 text-2xl font-black text-slate-900">Daftar akun siswa, guru, dan admin</h2>
+                <p class="mt-2 text-sm text-slate-500">Gunakan pencarian untuk menemukan akun dengan cepat, lalu edit status, role, atau password langsung dari panel ini.</p>
+            </div>
+            <a href="{% url 'accounts:add' %}" class="rounded-2xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800">
+                Tambah akun
+            </a>
+        </div>
+        <form method="get" class="w-full md:max-w-md">
+            <label for="search-account" class="sr-only">Cari akun</label>
+            <input
+                id="search-account"
+                type="text"
+                name="q"
+                value="{{ query }}"
+                placeholder="Cari nama, username, email, atau nomor HP"
+                class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-brand-500 focus:outline-none"
+            >
+        </form>
+    </div>
+
+    <div class="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Nama</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Username</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Role</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Kontak</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for account in users %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4">
+                                <p class="font-semibold text-slate-900">{{ account.full_name }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ account.email|default:"Email belum diisi" }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">{{ account.username }}</td>
+                            <td class="px-6 py-4 text-slate-600">{{ account.get_role_display }}</td>
+                            <td class="px-6 py-4 text-slate-600">{{ account.phone_number|default:"-" }}</td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-wrap gap-2">
+                                    {% if account.is_school_active %}
+                                        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Akun sekolah aktif</span>
+                                    {% else %}
+                                        <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">Akun sekolah nonaktif</span>
+                                    {% endif %}
+                                    {% if account.is_active %}
+                                        <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">User aktif</span>
+                                    {% else %}
+                                        <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">User nonaktif</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-wrap gap-2">
+                                    <a href="{% url 'accounts:edit' account.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-white">Edit</a>
+                                    <a href="{% url 'accounts:password' account.pk %}" class="rounded-full border border-amber-300 px-3 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-50">Password</a>
+                                    <a href="{% url 'accounts:delete' account.pk %}" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-50">Hapus</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-sm text-slate-500">Belum ada akun yang cocok dengan pencarian.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

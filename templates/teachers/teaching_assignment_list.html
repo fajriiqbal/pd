@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Mapel Yang Diajar | PDM{% endblock %}
+{% block page_kicker %}Modul Guru{% endblock %}
+{% block page_title %}Mapel yang diajar{% endblock %}
+{% block page_description %}Atur guru pengampu per kelas dan mata pelajaran sebagai dasar jadwal, ledger nilai, dan raport.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    {% include "teachers/_teacher_nav.html" %}
+
+    <div class="grid gap-4 sm:grid-cols-4">
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Total pengaturan</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ assignment_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Aktif</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ active_assignment_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Guru terlibat</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ teacher_with_assignment_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Total JTM</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ total_weekly_hours }}</p>
+        </article>
+    </div>
+
+    <div class="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white p-5 shadow-soft lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-2xl">
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Beban Mengajar</p>
+            <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Pengaturan guru pengampu</h2>
+            <p class="mt-2 text-sm text-slate-500">Satu baris mewakili satu mapel pada satu kelas. Data ini juga dipakai modul akademik.</p>
+        </div>
+        <div class="w-full space-y-3 lg:max-w-xl">
+            <form method="get">
+                <label for="search-assignment" class="sr-only">Cari pengaturan mapel</label>
+                <input
+                    id="search-assignment"
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="Cari guru, mapel, kode, atau kelas"
+                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-brand-500 focus:outline-none"
+                >
+            </form>
+            <a href="{% url 'teachers:teaching_assignment_add' %}" class="block rounded-2xl bg-slate-950 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-slate-800">
+                Tambah mapel yang diajar
+            </a>
+        </div>
+    </div>
+
+    <div class="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Guru</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Kelas</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Mapel</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">KKM/JTM</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for item in assignments %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4">
+                                <p class="font-semibold text-slate-900">{{ item.teacher.user.full_name|default:"Belum ditentukan" }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ item.teacher.nip|default:"NIP belum diisi" }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">{{ item.school_class.name }}</td>
+                            <td class="px-6 py-4">
+                                <p class="font-medium text-slate-900">{{ item.subject.name }}</p>
+                                <p class="mt-1 text-xs text-slate-400">{{ item.subject.code|default:"Tanpa kode" }} - {{ item.subject.get_curriculum_display }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">
+                                <p>KKM {{ item.minimum_score }}</p>
+                                <p class="mt-1 text-xs text-slate-400">{{ item.weekly_hours }} JTM/minggu</p>
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if item.is_active %}
+                                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Aktif</span>
+                                {% else %}
+                                    <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">Nonaktif</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-wrap gap-2">
+                                    <a href="{% url 'teachers:teaching_assignment_edit' item.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-white">Edit</a>
+                                    <a href="{% url 'teachers:teaching_assignment_delete' item.pk %}" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-50">Hapus</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-sm text-slate-500">Belum ada pengaturan mapel yang cocok.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Arsip Guru | PDM{% endblock %}
+{% block page_kicker %}Modul Guru{% endblock %}
+{% block page_title %}Arsip guru{% endblock %}
+{% block page_description %}Daftar guru yang sudah pensiun, pindah, atau selesai bertugas di madrasah.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="grid gap-4 md:grid-cols-3">
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft md:col-span-2">
+            <p class="text-sm text-slate-500">Konsep profesional</p>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Arsip guru tidak hilang saat mutasi keluar</h2>
+            <p class="mt-3 text-sm leading-6 text-slate-500">
+                Data guru yang pensiun atau pindah tetap tersimpan sebagai arsip, sehingga operator bisa mencari riwayatnya kapan saja tanpa mengganggu data aktif.
+            </p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Total arsip</p>
+            <p class="mt-3 text-4xl font-semibold tracking-tight text-slate-950">{{ archive_count }}</p>
+        </article>
+    </div>
+
+    <div class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+        <form method="get" class="grid gap-3 md:grid-cols-[1fr_220px_auto]">
+            <div>
+                <label class="text-sm font-medium text-slate-700">Cari arsip guru</label>
+                <input type="text" name="q" value="{{ query }}" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900" placeholder="Nama, NIP, NUPTK, atau mapel">
+            </div>
+            <div>
+                <label class="text-sm font-medium text-slate-700">Status keluar</label>
+                <select name="status" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                    <option value="">Semua</option>
+                    <option value="pensioned" {% if status == "pensioned" %}selected{% endif %}>Pensiun</option>
+                    <option value="transferred" {% if status == "transferred" %}selected{% endif %}>Pindah</option>
+                    <option value="other" {% if status == "other" %}selected{% endif %}>Lainnya</option>
+                </select>
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Cari</button>
+                <a href="{% url 'teachers:archive_list' %}" class="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-soft">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Nama</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Identitas</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Status keluar</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Arsip</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for item in archives %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4">
+                                <p class="font-semibold text-slate-950">{{ item.full_name }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ item.subject|default:"-" }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                <p>NIP {{ item.nip|default:"-" }}</p>
+                                <p class="mt-1">NUPTK {{ item.nuptk|default:"-" }}</p>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ item.get_exit_status_display }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.archived_at }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">Belum ada arsip guru.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} | PDM{% endblock %}
+{% block page_kicker %}{{ page_kicker }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_description %}{{ page_description }}{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft">
+        <div class="bg-[linear-gradient(135deg,#0f172a,#14532d)] px-6 py-7 text-white">
+            <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-200">Profil siswa</p>
+                    <h2 class="mt-3 text-3xl font-black tracking-tight">{{ student.user.full_name }}</h2>
+                    <p class="mt-2 max-w-2xl text-sm text-emerald-50">
+                        {% if student.nis %}NIS {{ student.nis }}{% else %}NIS belum diisi{% endif %} · {% if student.nisn %}NISN {{ student.nisn }}{% else %}NISN belum diisi{% endif %} · {{ student.current_class_label|default:"Belum masuk rombel" }}
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{% url 'students:detail' student.pk %}" class="rounded-2xl border border-white/30 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10">Lihat profil</a>
+                    <a href="{% url 'students:list' %}" class="rounded-2xl border border-white/30 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10">Kembali</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-3 p-6 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-2xl bg-slate-100 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Status data</p>
+                <p class="mt-2 text-lg font-semibold text-slate-950">{% if student.is_active %}Aktif{% else %}Nonaktif{% endif %}</p>
+            </div>
+            <div class="rounded-2xl bg-emerald-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-emerald-700">Akun sekolah</p>
+                <p class="mt-2 text-lg font-semibold text-slate-950">{% if student.user.is_school_active %}Aktif{% else %}Nonaktif{% endif %}</p>
+            </div>
+            <div class="rounded-2xl bg-sky-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-sky-700">Status keluarga</p>
+                <p class="mt-2 text-lg font-semibold text-slate-950">{{ student.get_family_status_display|default:"Belum diisi" }}</p>
+            </div>
+            <div class="rounded-2xl bg-rose-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-rose-700">Wali / orang tua</p>
+                <p class="mt-2 text-lg font-semibold text-slate-950">{{ student.guardian_name|default:"Belum diisi" }}</p>
+            </div>
+        </div>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    <div class="rounded-[2rem] border border-white/70 bg-white p-4 shadow-soft">
+        <div class="flex flex-wrap gap-2" role="tablist" aria-label="Menu edit siswa">
+            <button type="button" data-tab-target="data-siswa" class="student-tab rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" aria-selected="false">
+                Data siswa
+            </button>
+            <button type="button" data-tab-target="data-orang-tua" class="student-tab rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" aria-selected="false">
+                Data orang tua
+            </button>
+            <button type="button" data-tab-target="data-alamat" class="student-tab rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" aria-selected="false">
+                Data alamat
+            </button>
+            <button type="button" data-tab-target="upload-berkas" class="student-tab rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" aria-selected="false">
+                Upload berkas
+            </button>
+        </div>
+
+        <form method="post" class="mt-6 space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="form_type" value="profile">
+
+            <section id="data-siswa" data-student-panel class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                <div class="mb-5">
+                    <p class="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Data Siswa</p>
+                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Identitas utama dan akun login</h2>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label for="{{ form.full_name.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.full_name.label }}</label>
+                        {{ form.full_name }}
+                        {% if form.full_name.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.full_name.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.username.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.username.label }}</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.username.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.email.label }}</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.email.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.phone_number.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.phone_number.label }}</label>
+                        {{ form.phone_number }}
+                        {% if form.phone_number.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.phone_number.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.nis.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.nis.label }}</label>
+                        {{ form.nis }}
+                        {% if form.nis.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.nis.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.nisn.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.nisn.label }}</label>
+                        {{ form.nisn }}
+                        {% if form.nisn.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.nisn.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.gender.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.gender.label }}</label>
+                        {{ form.gender }}
+                        {% if form.gender.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.gender.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.birth_place.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.birth_place.label }}</label>
+                        {{ form.birth_place }}
+                        {% if form.birth_place.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.birth_place.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.birth_date.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.birth_date.label }}</label>
+                        {{ form.birth_date }}
+                        {% if form.birth_date.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.birth_date.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.class_name.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.class_name.label }}</label>
+                        {{ form.class_name }}
+                        {% if form.class_name.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.class_name.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.study_group.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.study_group.label }}</label>
+                        {{ form.study_group }}
+                        {% if form.study_group.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.study_group.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.entry_year.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.entry_year.label }}</label>
+                        {{ form.entry_year }}
+                        {% if form.entry_year.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.entry_year.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.password.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.password.label }}</label>
+                        {{ form.password }}
+                        {% if form.password.help_text %}<p class="mt-1 text-sm text-slate-500">{{ form.password.help_text }}</p>{% endif %}
+                        {% if form.password.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.password.errors }}</div>{% endif %}
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                        <label for="{{ form.is_school_active.id_for_label }}" class="flex items-start gap-3">
+                            {{ form.is_school_active }}
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900">{{ form.is_school_active.label }}</span>
+                                <span class="mt-1 block text-sm leading-6 text-slate-500">{% if form.is_school_active.help_text %}{{ form.is_school_active.help_text }}{% else %}Aktifkan bila akun login siswa bisa dipakai.{% endif %}</span>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                        <label for="{{ form.is_active.id_for_label }}" class="flex items-start gap-3">
+                            {{ form.is_active }}
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900">{{ form.is_active.label }}</span>
+                                <span class="mt-1 block text-sm leading-6 text-slate-500">{% if form.is_active.help_text %}{{ form.is_active.help_text }}{% else %}Tandai aktif bila siswa masih terdaftar.{% endif %}</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,_#1f9d55,_#157347)] px-5 py-2.5 text-sm font-medium text-white shadow-[0_12px_26px_-16px_rgba(21,115,71,0.75)] transition duration-200 hover:brightness-[1.03]">
+                        {{ submit_label }}
+                    </button>
+                    <a href="{% url cancel_url %}" class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-2.5 text-center text-sm font-medium text-slate-600 transition duration-200 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900">
+                        Batal
+                    </a>
+                </div>
+            </section>
+
+            <section id="data-orang-tua" data-student-panel hidden class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                <div class="mb-5">
+                    <p class="text-sm font-semibold uppercase tracking-[0.16em] text-sky-700">Data Orang Tua</p>
+                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Identitas ayah, ibu, dan wali</h2>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label for="{{ form.father_name.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.father_name.label }}</label>
+                        {{ form.father_name }}
+                        {% if form.father_name.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.father_name.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.father_nik.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.father_nik.label }}</label>
+                        {{ form.father_nik }}
+                        {% if form.father_nik.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.father_nik.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.father_birth_place.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.father_birth_place.label }}</label>
+                        {{ form.father_birth_place }}
+                        {% if form.father_birth_place.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.father_birth_place.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.father_birth_date.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.father_birth_date.label }}</label>
+                        {{ form.father_birth_date }}
+                        {% if form.father_birth_date.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.father_birth_date.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.father_education.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.father_education.label }}</label>
+                        {{ form.father_education }}
+                        {% if form.father_education.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.father_education.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.father_job.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.father_job.label }}</label>
+                        {{ form.father_job }}
+                        {% if form.father_job.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.father_job.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.mother_name.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.mother_name.label }}</label>
+                        {{ form.mother_name }}
+                        {% if form.mother_name.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.mother_name.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.mother_nik.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.mother_nik.label }}</label>
+                        {{ form.mother_nik }}
+                        {% if form.mother_nik.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.mother_nik.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.mother_birth_place.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.mother_birth_place.label }}</label>
+                        {{ form.mother_birth_place }}
+                        {% if form.mother_birth_place.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.mother_birth_place.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.mother_birth_date.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.mother_birth_date.label }}</label>
+                        {{ form.mother_birth_date }}
+                        {% if form.mother_birth_date.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.mother_birth_date.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.mother_education.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.mother_education.label }}</label>
+                        {{ form.mother_education }}
+                        {% if form.mother_education.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.mother_education.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.mother_job.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.mother_job.label }}</label>
+                        {{ form.mother_job }}
+                        {% if form.mother_job.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.mother_job.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.guardian_name.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.guardian_name.label }}</label>
+                        {{ form.guardian_name }}
+                        {% if form.guardian_name.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.guardian_name.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.family_status.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.family_status.label }}</label>
+                        {{ form.family_status }}
+                        {% if form.family_status.help_text %}<p class="mt-1 text-sm text-slate-500">{{ form.family_status.help_text }}</p>{% endif %}
+                        {% if form.family_status.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.family_status.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,_#1f9d55,_#157347)] px-5 py-2.5 text-sm font-medium text-white shadow-[0_12px_26px_-16px_rgba(21,115,71,0.75)] transition duration-200 hover:brightness-[1.03]">
+                        {{ submit_label }}
+                    </button>
+                </div>
+            </section>
+
+            <section id="data-alamat" data-student-panel hidden class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                <div class="mb-5">
+                    <p class="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-700">Data Alamat</p>
+                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Alamat, kebutuhan khusus, dan bantuan</h2>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div class="md:col-span-2">
+                        <label for="{{ form.address.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.address.label }}</label>
+                        {{ form.address }}
+                        {% if form.address.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.address.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.kip_number.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.kip_number.label }}</label>
+                        {{ form.kip_number }}
+                        {% if form.kip_number.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.kip_number.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.special_needs.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.special_needs.label }}</label>
+                        {{ form.special_needs }}
+                        {% if form.special_needs.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.special_needs.errors }}</div>{% endif %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="{{ form.disability_notes.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.disability_notes.label }}</label>
+                        {{ form.disability_notes }}
+                        {% if form.disability_notes.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ form.disability_notes.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,_#1f9d55,_#157347)] px-5 py-2.5 text-sm font-medium text-white shadow-[0_12px_26px_-16px_rgba(21,115,71,0.75)] transition duration-200 hover:brightness-[1.03]">
+                        {{ submit_label }}
+                    </button>
+                </div>
+            </section>
+        </form>
+
+        <section id="upload-berkas" data-student-panel hidden class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+            <div class="mb-5">
+                <p class="text-sm font-semibold uppercase tracking-[0.16em] text-violet-700">Upload Berkas</p>
+                <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Simpan KK, akta, ijazah, dan dokumen lain</h2>
+                <p class="mt-1 text-sm text-slate-500">Berkas dilengkapi setelah siswa masuk ke sistem, jadi import tetap ringan dan cepat seperti sekarang.</p>
+            </div>
+
+            {% if upload_form.non_field_errors %}
+                <div class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {{ upload_form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" action="{% url 'students:edit' student.pk %}" class="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-2">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="upload-berkas">
+                <div>
+                    <label for="{{ upload_form.document_type.id_for_label }}" class="text-sm font-medium text-slate-700">{{ upload_form.document_type.label }}</label>
+                    {{ upload_form.document_type }}
+                    {% if upload_form.document_type.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ upload_form.document_type.errors }}</div>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ upload_form.title.id_for_label }}" class="text-sm font-medium text-slate-700">{{ upload_form.title.label }}</label>
+                    {{ upload_form.title }}
+                    {% if upload_form.title.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ upload_form.title.errors }}</div>{% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label for="{{ upload_form.file.id_for_label }}" class="text-sm font-medium text-slate-700">{{ upload_form.file.label }}</label>
+                    {{ upload_form.file }}
+                    {% if upload_form.file.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ upload_form.file.errors }}</div>{% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label for="{{ upload_form.notes.id_for_label }}" class="text-sm font-medium text-slate-700">{{ upload_form.notes.label }}</label>
+                    {{ upload_form.notes }}
+                    {% if upload_form.notes.errors %}<div class="mt-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{{ upload_form.notes.errors }}</div>{% endif %}
+                </div>
+                <div class="md:col-span-2 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,_#7c3aed,_#5b21b6)] px-5 py-2.5 text-sm font-medium text-white transition hover:brightness-[1.03]">
+                        Upload berkas
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">Daftar Berkas</p>
+                        <h3 class="mt-1 text-lg font-semibold tracking-tight text-slate-950">Berkas yang sudah diunggah</h3>
+                    </div>
+                    <p class="text-sm text-slate-500">{{ documents|length }} berkas</p>
+                </div>
+
+                <div class="grid gap-3">
+                    {% for document in documents %}
+                        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ document.get_document_type_display }}</span>
+                                        <p class="font-semibold text-slate-900">{{ document.title }}</p>
+                                    </div>
+                                    {% if document.notes %}
+                                        <p class="mt-2 text-sm text-slate-500">{{ document.notes }}</p>
+                                    {% endif %}
+                                    <p class="mt-2 text-xs text-slate-400">{{ document.uploaded_at }}</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <a href="{{ document.file.url }}" target="_blank" class="rounded-full border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50">Buka file</a>
+                                    <form method="post" action="{% url 'students:attachment_delete' student.pk document.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-50">Hapus</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="rounded-2xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">Belum ada berkas siswa yang diunggah.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </div>
+</section>
+
+<script>
+(() => {
+    const tabs = Array.from(document.querySelectorAll("[data-tab-target]"));
+    const panels = Array.from(document.querySelectorAll("[data-student-panel]"));
+    if (!tabs.length || !panels.length) {
+        return;
+    }
+
+    const activateTab = (targetId) => {
+        panels.forEach((panel) => {
+            panel.hidden = panel.id !== targetId;
+        });
+
+        tabs.forEach((tab) => {
+            const active = tab.dataset.tabTarget === targetId;
+            tab.setAttribute("aria-selected", active ? "true" : "false");
+            tab.classList.toggle("bg-slate-950", active);
+            tab.classList.toggle("text-white", active);
+            tab.classList.toggle("border-slate-950", active);
+            tab.classList.toggle("text-slate-700", !active);
+        });
+    };
+
+    tabs.forEach((tab) => {
+        tab.addEventListener("click", () => activateTab(tab.dataset.tabTarget));
+    });
+
+    activateTab("{{ active_tab|default:'data-siswa' }}");
+})();
+</script>
+{% endblock %}

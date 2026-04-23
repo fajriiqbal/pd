@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Raport {{ study_group.name }} | PDM{% endblock %}
+{% block page_kicker %}Raport Rombel{% endblock %}
+{% block page_title %}Raport {{ study_group.name }}{% endblock %}
+{% block page_description %}Rekap nilai per siswa untuk {{ study_group.school_class.name }} tahun ajaran {{ study_group.academic_year.name }}.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="rounded-[2rem] border border-white/70 bg-white p-6 shadow-soft">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Preview raport</p>
+                <h2 class="mt-2 text-2xl font-black tracking-tight text-slate-950">{{ study_group.name }} - {{ study_group.academic_year.name }}</h2>
+                <p class="mt-2 text-sm text-slate-500">
+                    Wali kelas: {{ study_group.homeroom_teacher.user.full_name|default:"Belum diisi" }}
+                </p>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <form method="get">
+                    <select name="semester" onchange="this.form.submit()" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:border-brand-500 focus:outline-none">
+                        {% for value, label in semester_choices %}
+                            <option value="{{ value }}" {% if semester == value %}selected{% endif %}>Semester {{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+                <a href="{% url 'academics:group_detail' study_group.pk %}" class="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Kembali</a>
+                <a href="{% url 'academics:ledger_list' %}" class="rounded-2xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800">Ledger nilai</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft">
+        <div class="border-b border-slate-100 bg-slate-50 px-6 py-5">
+            <p class="text-sm font-semibold text-slate-900">Rekap nilai raport</p>
+            <p class="mt-1 text-sm text-slate-500">Jika kolom masih kosong, buat atau lengkapi ledger untuk mapel terkait.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="sticky left-0 bg-slate-50 px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Siswa</th>
+                        {% for class_subject in class_subjects %}
+                            <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">{{ class_subject.subject.name }}</th>
+                        {% endfor %}
+                        <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Rata-rata</th>
+                        <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Progress</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in rows %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="sticky left-0 bg-white px-6 py-4">
+                                <p class="font-semibold text-slate-900">{{ row.student.user.full_name }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ row.student.nis|default:"NIS belum diisi" }}</p>
+                            </td>
+                            {% for subject_grade in row.subject_grades %}
+                                <td class="px-4 py-4 text-sm text-slate-600">
+                                    {% if subject_grade.final_score %}
+                                        {{ subject_grade.final_score }}
+                                    {% elif subject_grade.grade_book %}
+                                        <span class="text-amber-600">Belum lengkap</span>
+                                    {% else %}
+                                        <span class="text-slate-400">Belum ada ledger</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                            <td class="px-4 py-4 font-semibold text-slate-900">{{ row.average|default:"-" }}</td>
+                            <td class="px-4 py-4 text-sm text-slate-600">{{ row.complete_count }} / {{ row.subject_count }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-sm text-slate-500">Belum ada siswa aktif di rombel ini.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

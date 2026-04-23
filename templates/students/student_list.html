@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Data Siswa | PDM{% endblock %}
+{% block page_kicker %}Modul Siswa{% endblock %}
+{% block page_title %}Pusat data siswa{% endblock %}
+{% block page_description %}Halaman ini difokuskan untuk pencarian cepat, pemantauan kelas, validasi identitas siswa, dan import data dari Excel.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    {% if import_result %}
+        <div class="rounded-[28px] border border-emerald-200 bg-white p-5 shadow-soft">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Import siswa</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">{{ import_result.title }}</h2>
+                </div>
+                <a href="{% url 'students:list' %}" class="inline-flex justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+                    Tutup ringkasan
+                </a>
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <div class="rounded-2xl bg-emerald-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-emerald-700">Baru</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ import_result.created|default:0 }}</p>
+                </div>
+                <div class="rounded-2xl bg-sky-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-sky-700">Update</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ import_result.updated|default:0 }}</p>
+                </div>
+                <div class="rounded-2xl bg-rose-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-rose-700">Gagal</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ import_result.failed|default:0 }}</p>
+                </div>
+                <div class="rounded-2xl bg-slate-100 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Kelas baru</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ import_result.class_created|default:0 }}</p>
+                </div>
+                <div class="rounded-2xl bg-slate-100 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Rombel baru</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ import_result.group_created|default:0 }}</p>
+                </div>
+            </div>
+
+            {% if import_result.errors %}
+                <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                    <p class="font-medium text-rose-800">Beberapa baris gagal diproses</p>
+                    <div class="mt-3 max-h-56 space-y-2 overflow-y-auto text-sm text-rose-700">
+                        {% for error in import_result.errors %}
+                            <p>Sheet {{ error.sheet }} | Baris {{ error.row }} | {{ error.message }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="flex flex-col gap-4 rounded-[2rem] border border-white/70 bg-white p-6 shadow-soft">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="max-w-2xl">
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-brand-700">Data Siswa</p>
+                <h2 class="mt-2 text-2xl font-black text-slate-900">Data siswa madrasah</h2>
+                <p class="mt-2 text-sm text-slate-500">Operator dapat menambah siswa satuan atau import langsung dari Excel per sheet rombel tanpa data ganda.</p>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <form
+                    method="post"
+                    action="{% url 'students:import_preview' %}"
+                    enctype="multipart/form-data"
+                    data-import-loading
+                    data-loading-title="Membaca file Excel"
+                    data-loading-message="Sistem sedang mengunggah file, membaca sheet, dan menyiapkan preview data siswa."
+                    data-loading-steps="Mengunggah file|Membaca sheet Excel|Membuat preview"
+                    class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center"
+                >
+                    {% csrf_token %}
+                    <input type="file" name="excel_file" accept=".xlsx" required class="block max-w-[220px] text-xs text-slate-500 file:mr-3 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:bg-slate-800">
+                    <input type="password" name="default_password" placeholder="Password akun baru" required class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none">
+                    <button type="submit" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100">
+                        Preview import
+                    </button>
+                </form>
+                <a href="{% url 'students:add' %}" class="rounded-2xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800">
+                    Tambah siswa
+                </a>
+                <a href="{% url 'students:mutation_list' %}" class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-3 text-center text-sm font-semibold text-sky-800 transition hover:bg-sky-100">
+                    Mutasi siswa
+                </a>
+            </div>
+        </div>
+        <form method="get" class="grid gap-3 lg:grid-cols-5">
+            <div class="lg:col-span-2">
+                <label for="search-student" class="sr-only">Cari siswa</label>
+                <input
+                    id="search-student"
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="Cari nama, NIS, NISN, kelas, atau rombel"
+                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none"
+                >
+            </div>
+            <select id="class-filter" name="class" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:border-brand-500 focus:outline-none">
+                <option value="">Semua kelas</option>
+                {% for class_option in class_options %}
+                    <option value="{{ class_option.id }}" {% if class_id == class_option.id|stringformat:"s" %}selected{% endif %}>{{ class_option.name }}</option>
+                {% endfor %}
+            </select>
+            <select id="study-group-filter" name="study_group" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:border-brand-500 focus:outline-none">
+                <option value="">Semua rombel</option>
+                {% for group_option in study_group_options %}
+                    <option
+                        value="{{ group_option.id }}"
+                        data-class-id="{{ group_option.school_class_id }}"
+                        {% if class_id and group_option.school_class_id|stringformat:"s" != class_id %}hidden disabled{% endif %}
+                        {% if study_group_id == group_option.id|stringformat:"s" %}selected{% endif %}
+                    >
+                        {{ group_option.name }} - {{ group_option.total_students|default:0 }} siswa
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="status" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:border-brand-500 focus:outline-none">
+                <option value="">Semua status</option>
+                <option value="active" {% if status == "active" %}selected{% endif %}>Data aktif</option>
+                <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Data nonaktif</option>
+            </select>
+            <select name="nis_status" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:border-brand-500 focus:outline-none">
+                <option value="">Semua NIS</option>
+                <option value="missing" {% if nis_status == "missing" %}selected{% endif %}>NIS belum diisi</option>
+                <option value="filled" {% if nis_status == "filled" %}selected{% endif %}>NIS sudah diisi</option>
+            </select>
+            <div class="flex flex-col gap-2 sm:flex-row lg:col-span-4">
+                <button type="submit" class="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+                    Terapkan filter
+                </button>
+                <a href="{% url 'students:list' %}" class="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    Reset filter
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft">
+        <form id="bulk-delete-form" method="post" action="{% url 'students:bulk_delete' %}">
+            {% csrf_token %}
+            <div class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <p class="text-sm text-slate-500">
+                    Centang siswa yang ingin dihapus, atau pilih semua data yang sedang tampil di tabel.
+                </p>
+                <button type="submit" id="bulk-delete-button" class="rounded-full border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+                    Hapus siswa terpilih
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left">
+                                <input id="select-all-students" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-slate-900">
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Nama</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Username</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">NIS</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Kelas / Rombel</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for student in students %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4">
+                                    <input type="checkbox" name="selected_students" value="{{ student.pk }}" class="student-checkbox h-4 w-4 rounded border-slate-300 text-slate-900">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="font-semibold text-slate-900">{{ student.user.full_name }}</p>
+                                    <p class="mt-1 text-sm text-slate-500">{{ student.nisn|default:"NISN belum diisi" }}</p>
+                                </td>
+                                <td class="px-6 py-4 text-slate-600">{{ student.user.username }}</td>
+                                <td class="px-6 py-4 text-slate-600">{{ student.nis|default:"Belum diisi" }}</td>
+                                <td class="px-6 py-4 text-slate-600">{{ student.current_class_label }}</td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-wrap gap-2">
+                                        {% if student.is_active %}
+                                            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Data aktif</span>
+                                        {% else %}
+                                            <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">Data nonaktif</span>
+                                        {% endif %}
+                                        {% if student.user.is_school_active %}
+                                            <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">Akun aktif</span>
+                                        {% else %}
+                                            <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">Akun nonaktif</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-wrap gap-2">
+                                        <a href="{% url 'students:detail' student.pk %}" class="rounded-full border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50">View</a>
+                                        <a href="{% url 'students:edit' student.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-white">Edit</a>
+                                        <a href="{% url 'students:delete' student.pk %}" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-50">Hapus</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="7" class="px-6 py-8 text-center text-sm text-slate-500">Belum ada data siswa yang cocok dengan pencarian.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+</section>
+<script>
+    const selectAllStudents = document.getElementById("select-all-students");
+    const studentCheckboxes = Array.from(document.querySelectorAll(".student-checkbox"));
+    const bulkDeleteForm = document.getElementById("bulk-delete-form");
+    const classFilter = document.getElementById("class-filter");
+    const studyGroupFilter = document.getElementById("study-group-filter");
+
+    function syncStudyGroupOptions() {
+        if (!classFilter || !studyGroupFilter) {
+            return;
+        }
+
+        const selectedClassId = classFilter.value;
+        const options = Array.from(studyGroupFilter.options);
+
+        options.forEach((option) => {
+            if (!option.value) {
+                option.hidden = false;
+                option.disabled = false;
+                return;
+            }
+
+            const shouldShow = !selectedClassId || option.dataset.classId === selectedClassId;
+            option.hidden = !shouldShow;
+            option.disabled = !shouldShow;
+        });
+
+        if (studyGroupFilter.selectedOptions.length && studyGroupFilter.selectedOptions[0].disabled) {
+            studyGroupFilter.value = "";
+        }
+    }
+
+    syncStudyGroupOptions();
+
+    if (classFilter) {
+        classFilter.addEventListener("change", syncStudyGroupOptions);
+    }
+
+    function selectedStudentCount() {
+        return studentCheckboxes.filter((checkbox) => checkbox.checked).length;
+    }
+
+    if (selectAllStudents) {
+        selectAllStudents.addEventListener("change", () => {
+            studentCheckboxes.forEach((checkbox) => {
+                checkbox.checked = selectAllStudents.checked;
+            });
+        });
+    }
+
+    studentCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+            const selectedCount = selectedStudentCount();
+            selectAllStudents.checked = selectedCount === studentCheckboxes.length && studentCheckboxes.length > 0;
+            selectAllStudents.indeterminate = selectedCount > 0 && selectedCount < studentCheckboxes.length;
+        });
+    });
+
+    if (bulkDeleteForm) {
+        bulkDeleteForm.addEventListener("submit", (event) => {
+            const selectedCount = selectedStudentCount();
+            if (selectedCount === 0) {
+                event.preventDefault();
+                alert("Pilih minimal satu siswa yang ingin dihapus.");
+                return;
+            }
+
+            if (!confirm(`Yakin ingin menghapus ${selectedCount} data siswa terpilih? Akun login siswa juga akan ikut terhapus.`)) {
+                event.preventDefault();
+            }
+        });
+    }
+</script>
+{% include "students/_import_loading_overlay.html" %}
+{% endblock %}

@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | PDM{% endblock %}
+{% block page_kicker %}{{ page_kicker|default:"Dashboard" }}{% endblock %}
+{% block page_title %}{{ page_title|default:"Ringkasan kerja hari ini" }}{% endblock %}
+{% block page_description %}{{ page_description|default:"Fokus utama ditampilkan lebih ringkas agar operator langsung tahu apa yang perlu dikerjakan lebih dulu." }}{% endblock %}
+
+{% block content %}
+{% if show_login_briefing %}
+    <div id="login-briefing" class="fixed inset-0 z-[95] flex items-start justify-center overflow-y-auto bg-slate-950/40 px-4 py-6 backdrop-blur-sm sm:pt-8">
+        <div class="alert-slide-panel mt-0 w-full max-w-3xl max-h-[calc(100vh-3rem)] overflow-auto rounded-[32px] border border-white/80 bg-white p-6 shadow-2xl sm:p-7">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex items-start gap-4">
+                    <img src="/static/img/madrasah-logo.svg" alt="Logo PDM" class="brand-mark brand-mark-large">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Setelah login</p>
+                        <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Prioritas kerja hari ini</h2>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">Berikut tugas yang paling penting untuk segera ditangani operator agar data tetap rapi dan siap dipakai.</p>
+                    </div>
+                </div>
+                <button type="button" class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50" data-close-login-briefing>
+                    Tutup
+                </button>
+            </div>
+
+            <div class="mt-6 grid gap-3">
+                {% for action in login_briefing_actions %}
+                    <a href="{{ action.url }}" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-emerald-200 hover:bg-emerald-50">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="font-medium text-slate-900">{{ action.title }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ action.description }}</p>
+                            </div>
+                            <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">{{ action.action_label }}</span>
+                        </div>
+                    </a>
+                {% empty %}
+                    <div class="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm text-emerald-800">
+                        Semua data utama sudah relatif lengkap. Anda bisa lanjut ke pemeriksaan rutin.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{% if dashboard_mode == "teacher" %}
+<section class="space-y-6">
+    <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Dashboard guru</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Fokus pada mengajar, tugas, dan rombel binaan</h2>
+                <p class="mt-2 max-w-2xl text-sm text-slate-500">Panel ini hanya menampilkan hal yang relevan untuk guru agar tidak tercampur dengan menu admin.</p>
+            </div>
+            {% if teacher_profile %}
+                <a href="{{ teacher_profile.user.profile_url|default:'#' }}" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Buka profil saya</a>
+            {% endif %}
+        </div>
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+            <article class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                <p class="text-sm text-slate-500">Mapel diajar</p>
+                <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ teacher_teaching_count }}</p>
+            </article>
+            <article class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                <p class="text-sm text-slate-500">Tugas tambahan</p>
+                <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ teacher_task_count }}</p>
+            </article>
+            <article class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                <p class="text-sm text-slate-500">Rombel binaan</p>
+                <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ teacher_homeroom_count }}</p>
+            </article>
+        </div>
+    </section>
+
+    <div class="grid gap-6 xl:grid-cols-2">
+        <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Mengajar saya</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Daftar mapel yang diampu</h2>
+                </div>
+                <a href="{% url 'teachers:teaching_assignments' %}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Buka detail</a>
+            </div>
+            <div class="mt-5 space-y-3">
+                {% for assignment in teacher_teaching_assignments %}
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                        <p class="font-medium text-slate-900">{{ assignment.subject.name }}</p>
+                        <p class="mt-1 text-sm text-slate-500">{{ assignment.school_class.name }}</p>
+                    </div>
+                {% empty %}
+                    <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">Belum ada mapel yang diampu.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Tugas tambahan</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Amanah yang sedang aktif</h2>
+                </div>
+                <a href="{% url 'teachers:additional_tasks' %}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Buka detail</a>
+            </div>
+            <div class="mt-5 space-y-3">
+                {% for task in teacher_additional_tasks %}
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                        <p class="font-medium text-slate-900">{{ task.name }}</p>
+                        <p class="mt-1 text-sm text-slate-500">{{ task.get_task_type_display }}</p>
+                    </div>
+                {% empty %}
+                    <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">Belum ada tugas tambahan aktif.</div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+        <div class="flex items-center justify-between gap-4">
+            <div>
+                <p class="text-sm text-slate-500">Rombel binaan</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Rombel yang saya bimbing</h2>
+            </div>
+            <a href="{% url 'teachers:teaching_assignments' %}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Kelola mengajar</a>
+        </div>
+        <div class="mt-5 space-y-3">
+            {% for group in teacher_homeroom_groups %}
+                <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="font-medium text-slate-900">{{ group.name }}</p>
+                            <p class="mt-1 text-sm text-slate-500">{{ group.school_class.name }} - {{ group.academic_year.name }}</p>
+                        </div>
+                        <a href="{% url 'academics:group_detail' group.pk %}" class="inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-white">Buka rombel</a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">Belum ada rombel binaan.</div>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% elif dashboard_mode == "student" %}
+<section class="space-y-6">
+    <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Dashboard siswa</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Data pribadi dan berkas saya</h2>
+                <p class="mt-2 max-w-2xl text-sm text-slate-500">Akun siswa hanya menampilkan data milik sendiri agar tidak ada akses ke data yang bukan haknya.</p>
+            </div>
+            {% if student_profile %}
+                <a href="{{ student_profile.user.profile_url|default:'#' }}" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Buka profil saya</a>
+            {% endif %}
+        </div>
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+            <article class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                <p class="text-sm text-slate-500">NIS</p>
+                <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ student_profile.nis|default:"-" }}</p>
+            </article>
+            <article class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                <p class="text-sm text-slate-500">NISN</p>
+                <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ student_profile.nisn|default:"-" }}</p>
+            </article>
+            <article class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                <p class="text-sm text-slate-500">Berkas saya</p>
+                <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ student_document_count }}</p>
+            </article>
+        </div>
+    </section>
+
+    <div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Profil saya</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Ringkasan data siswa</h2>
+                </div>
+                {% if student_profile %}
+                    <a href="{{ student_profile.user.profile_url|default:'#' }}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Edit profil</a>
+                {% endif %}
+            </div>
+            {% if student_profile %}
+                <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                        <p class="text-sm text-slate-500">Nama lengkap</p>
+                        <p class="mt-2 font-medium text-slate-900">{{ student_profile.user.full_name }}</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                        <p class="text-sm text-slate-500">Kelas</p>
+                        <p class="mt-2 font-medium text-slate-900">{{ student_profile.class_name|default:"-" }}</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                        <p class="text-sm text-slate-500">Rombel</p>
+                        <p class="mt-2 font-medium text-slate-900">{{ student_profile.study_group.name|default:"-" }}</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                        <p class="text-sm text-slate-500">Status akun</p>
+                        <p class="mt-2 font-medium text-slate-900">{% if student_profile.is_active %}Aktif{% else %}Nonaktif{% endif %}</p>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Berkas saya</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Dokumen yang tersimpan</h2>
+                </div>
+                {% if student_profile %}
+                    <a href="{{ student_profile.user.profile_url|default:'#' }}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Buka profil</a>
+                {% endif %}
+            </div>
+            <div class="mt-5 space-y-3">
+                {% for document in student_documents %}
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                        <p class="font-medium text-slate-900">{{ document.title }}</p>
+                        <p class="mt-1 text-sm text-slate-500">{{ document.get_document_type_display }}</p>
+                    </div>
+                {% empty %}
+                    <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">Belum ada berkas yang diunggah.</div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</section>
+{% else %}
+<section class="space-y-6">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Siswa</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ student_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Guru</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ teacher_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Rombel</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ study_group_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Akun</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ account_count }}</p>
+        </article>
+    </div>
+
+    <section class="overflow-hidden rounded-[32px] border border-emerald-100 bg-[linear-gradient(135deg,#ecfdf5,#f8fafc_60%,#eef2ff)] p-6 shadow-soft">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Monitoring sosial & bantuan</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Sorot data yang paling penting untuk perhatian operator</h2>
+                <p class="mt-2 max-w-2xl text-sm text-slate-500">Bagian ini membantu memantau siswa yatim, piatu, yatim piatu, penerima KIP/PIP, serta berkas pendukung yang sudah diunggah.</p>
+            </div>
+            <div class="rounded-full border border-white/80 bg-white/80 px-4 py-2 text-sm text-slate-600 shadow-soft">
+                Total siswa aktif: <span class="font-semibold text-slate-950">{{ student_count }}</span>
+            </div>
+        </div>
+
+        <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {% for card in social_cards %}
+                <article class="rounded-[28px] border border-white/80 bg-white/85 p-5 shadow-soft backdrop-blur">
+                    <p class="text-sm text-slate-500">{{ card.title }}</p>
+                    <div class="mt-3 flex items-end justify-between gap-4">
+                        <p class="text-3xl font-semibold tracking-tight text-slate-950">{{ card.count }}</p>
+                        <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Monitoring</span>
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-slate-500">{{ card.hint }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Kesehatan data</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Progress kelengkapan data inti siswa</h2>
+                <p class="mt-2 max-w-2xl text-sm text-slate-500">Bagian ini memberi gambaran cepat seberapa jauh data siswa sudah siap dipakai untuk administrasi dan pelaporan.</p>
+            </div>
+            <a href="{% url 'students:list' %}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Periksa detail</a>
+        </div>
+
+        <div class="mt-5 grid gap-4 xl:grid-cols-2">
+            {% for card in health_cards %}
+                <article class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm text-slate-500">{{ card.title }}</p>
+                            <p class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{{ card.percent }}%</p>
+                        </div>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">{{ card.count }} / {{ card.total }}</span>
+                    </div>
+                    <div class="mt-4 h-2 rounded-full bg-white">
+                        <div class="h-2 rounded-full bg-[linear-gradient(90deg,#0f766e,#16a34a)]" style="width: {{ card.percent }}%;"></div>
+                    </div>
+                    <p class="mt-3 text-sm text-slate-500">{{ card.description }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Alert cepat</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Yang paling perlu perhatian hari ini</h2>
+                <p class="mt-2 max-w-2xl text-sm text-slate-500">Panel ini menyorot item yang layak ditangani lebih dulu supaya operator tidak perlu menebak-nebak prioritas.</p>
+            </div>
+            <a href="{% url 'students:list' %}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Buka data siswa</a>
+        </div>
+
+        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {% for alert in alert_cards %}
+                <article class="rounded-[28px] border px-5 py-5 shadow-soft {% if alert.severity == 'high' %}border-rose-200 bg-rose-50{% elif alert.severity == 'medium' %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50{% endif %}">
+                    <p class="text-sm {% if alert.severity == 'high' %}text-rose-700{% elif alert.severity == 'medium' %}text-amber-700{% else %}text-emerald-700{% endif %}">{{ alert.title }}</p>
+                    <div class="mt-3 flex items-end justify-between gap-4">
+                        <p class="text-3xl font-semibold tracking-tight text-slate-950">{{ alert.count }}</p>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">Alert</span>
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-slate-500">{{ alert.description }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Prioritas</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Yang perlu dikerjakan lebih dulu</h2>
+                </div>
+                {% if active_year %}
+                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{{ active_year.name }}</span>
+                {% else %}
+                    <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">Belum ada tahun aktif</span>
+                {% endif %}
+            </div>
+
+            <div class="mt-5 divide-y divide-slate-100">
+                {% for action in priority_actions %}
+                    <div class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p class="font-medium text-slate-900">{{ action.title }}</p>
+                            <p class="mt-1 text-sm text-slate-500">{{ action.description }}</p>
+                        </div>
+                        <a href="{{ action.url }}" class="inline-flex rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
+                            {{ action.action_label }}
+                        </a>
+                    </div>
+                {% empty %}
+                    <div class="py-4">
+                        <p class="font-medium text-slate-900">Tidak ada prioritas mendesak.</p>
+                        <p class="mt-1 text-sm text-slate-500">Struktur utama sudah cukup rapi untuk dipakai harian.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Kelengkapan data inti</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Hal yang paling sering dipakai saat verifikasi</h2>
+                </div>
+                <a href="{% url 'students:list' %}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Buka data siswa</a>
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                {% for card in compliance_cards %}
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                        <p class="text-sm text-slate-500">{{ card.title }}</p>
+                        <p class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{{ card.count }}</p>
+                        <p class="mt-2 text-sm text-slate-500">{{ card.description }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Tahun ajaran aktif</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Pantauan rombel</h2>
+                </div>
+                <a href="{% url 'academics:overview' %}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Kelola</a>
+            </div>
+
+            <div class="mt-5 space-y-3">
+                {% for group in active_year_groups %}
+                    <div class="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-4">
+                        <div>
+                            <p class="font-medium text-slate-900">{{ group.name }}</p>
+                            <p class="mt-1 text-sm text-slate-500">
+                                {{ group.school_class.name }}
+                                {% if group.homeroom_teacher %}
+                                    - {{ group.homeroom_teacher.user.full_name }}
+                                {% else %}
+                                    - wali belum diisi
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-semibold tracking-tight text-slate-950">{{ group.active_student_count }}</p>
+                            <p class="text-sm text-slate-400">siswa</p>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                        Belum ada rombel aktif pada tahun ajaran berjalan.
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Perlu dicek</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Data yang belum lengkap</h2>
+                </div>
+            </div>
+
+            <div class="mt-5 space-y-5">
+                <div>
+                    <div class="mb-3 flex items-center justify-between">
+                        <p class="font-medium text-slate-900">Siswa tanpa rombel</p>
+                        <a href="{% url 'students:list' %}" class="text-sm text-slate-500 transition hover:text-slate-900">Lihat</a>
+                    </div>
+                    <div class="space-y-2">
+                        {% for student in students_without_group %}
+                            <div class="rounded-2xl bg-slate-50 px-4 py-3">
+                                <p class="font-medium text-slate-900">{{ student.user.full_name }}</p>
+                                <p class="text-sm text-slate-500">NIS {{ student.nis|default:"belum diisi" }}</p>
+                            </div>
+                        {% empty %}
+                            <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                                Semua siswa aktif sudah punya rombel.
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="mb-3 flex items-center justify-between">
+                        <p class="font-medium text-slate-900">Guru tanpa mapel</p>
+                        <a href="{% url 'teachers:list' %}" class="text-sm text-slate-500 transition hover:text-slate-900">Lihat</a>
+                    </div>
+                    <div class="space-y-2">
+                        {% for teacher in teachers_without_subject %}
+                            <div class="rounded-2xl bg-slate-50 px-4 py-3">
+                                <p class="font-medium text-slate-900">{{ teacher.user.full_name }}</p>
+                                <p class="text-sm text-slate-500">NIP {{ teacher.nip }}</p>
+                            </div>
+                        {% empty %}
+                            <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                                Semua guru aktif sudah punya mapel.
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <p class="text-sm text-slate-500">Aktivitas terbaru</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Jejak perubahan yang terakhir terjadi</h2>
+            </div>
+            <a href="{% url 'students:list' %}" class="text-sm font-medium text-slate-500 transition hover:text-slate-900">Buka data siswa</a>
+        </div>
+
+        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {% for item in recent_activities %}
+                <article class="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="font-medium text-slate-900">{{ item.module }}</p>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">{{ item.action }}</span>
+                    </div>
+                    <p class="mt-2 text-sm text-slate-500">{{ item.object_label|default:item.message|default:"Aktivitas tercatat" }}</p>
+                    <p class="mt-2 text-xs text-slate-400">
+                        {% if item.actor %}Oleh {{ item.actor.full_name|default:item.actor.username }}{% else %}Sistem{% endif %}
+                        - {{ item.created_at|date:"d M Y H:i" }}
+                    </p>
+                </article>
+            {% empty %}
+                <p class="rounded-2xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">Belum ada log aktivitas yang tersimpan.</p>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% endif %}
+
+{% if show_login_briefing %}
+<script>
+(() => {
+    const modal = document.getElementById("login-briefing");
+    if (!modal) {
+        return;
+    }
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.scrollBehavior = "auto";
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
+    window.requestAnimationFrame(() => modal.querySelector(".alert-slide-panel")?.classList.add("is-visible"));
+
+    const close = () => {
+        modal.style.transition = "opacity 180ms ease, transform 180ms ease";
+        modal.style.opacity = "0";
+        modal.style.transform = "scale(0.985)";
+        document.body.style.overflow = "";
+        window.setTimeout(() => modal.remove(), 180);
+    };
+
+    modal.querySelectorAll("[data-close-login-briefing]").forEach((button) => {
+        button.addEventListener("click", close);
+    });
+
+    modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+            close();
+        }
+    });
+
+    window.setTimeout(close, 12000);
+})();
+</script>
+{% endif %}
+{% endblock %}

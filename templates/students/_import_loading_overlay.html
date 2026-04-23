@@ -1,0 +1,130 @@
+<div id="student-import-loading" class="import-loading-overlay hidden" role="status" aria-live="polite" aria-hidden="true">
+    <div class="import-loading-panel">
+        <div class="import-loading-orbit" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="mt-5">
+            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Import siswa</p>
+            <h2 id="import-loading-title" class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Memproses data siswa</h2>
+            <p id="import-loading-message" class="mt-2 text-sm leading-6 text-slate-500">Mohon tunggu sebentar. Sistem sedang menyiapkan data import.</p>
+        </div>
+
+        <div class="mt-6">
+            <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+                <span id="import-loading-step-label">Menyiapkan proses</span>
+                <span id="import-loading-percent">12%</span>
+            </div>
+            <div class="mt-2 h-3 overflow-hidden rounded-full bg-slate-100">
+                <div id="import-loading-progress" class="h-full rounded-full bg-[linear-gradient(90deg,_#16a34a,_#22c55e,_#86efac)] transition-all duration-500" style="width: 12%"></div>
+            </div>
+        </div>
+
+        <div class="mt-5 grid gap-2 text-sm text-slate-600 sm:grid-cols-3">
+            <div class="import-loading-step is-active" data-loading-step>
+                <span></span>
+                <p>Mengunggah file</p>
+            </div>
+            <div class="import-loading-step" data-loading-step>
+                <span></span>
+                <p>Membaca sheet</p>
+            </div>
+            <div class="import-loading-step" data-loading-step>
+                <span></span>
+                <p>Menyimpan data</p>
+            </div>
+        </div>
+
+        <p class="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800">
+            Jangan tutup halaman ini sampai proses selesai agar data import tidak terputus.
+        </p>
+    </div>
+</div>
+
+<script>
+    (() => {
+        const overlay = document.getElementById("student-import-loading");
+        if (!overlay) {
+            return;
+        }
+
+        const title = document.getElementById("import-loading-title");
+        const message = document.getElementById("import-loading-message");
+        const stepLabel = document.getElementById("import-loading-step-label");
+        const percentLabel = document.getElementById("import-loading-percent");
+        const progress = document.getElementById("import-loading-progress");
+        const stepItems = Array.from(overlay.querySelectorAll("[data-loading-step]"));
+        let stepTimer = null;
+        let progressTimer = null;
+
+        function setSteps(labels) {
+            stepItems.forEach((item, index) => {
+                const text = item.querySelector("p");
+                text.textContent = labels[index] || text.textContent;
+                item.classList.toggle("is-active", index === 0);
+                item.classList.remove("is-complete");
+            });
+            stepLabel.textContent = labels[0] || "Menyiapkan proses";
+        }
+
+        function showImportLoading(form) {
+            const labels = (form.dataset.loadingSteps || "Mengunggah file|Membaca sheet|Menyimpan data").split("|");
+            let currentStep = 0;
+            let currentProgress = 12;
+
+            title.textContent = form.dataset.loadingTitle || "Memproses data siswa";
+            message.textContent = form.dataset.loadingMessage || "Mohon tunggu sebentar. Sistem sedang menyiapkan data import.";
+            setSteps(labels);
+            progress.style.width = `${currentProgress}%`;
+            percentLabel.textContent = `${currentProgress}%`;
+
+            overlay.classList.remove("hidden");
+            overlay.setAttribute("aria-hidden", "false");
+            document.body.classList.add("overflow-hidden");
+            window.requestAnimationFrame(() => overlay.classList.add("is-visible"));
+
+            stepTimer = window.setInterval(() => {
+                stepItems[currentStep]?.classList.add("is-complete");
+                currentStep = Math.min(currentStep + 1, stepItems.length - 1);
+                stepItems.forEach((item, index) => {
+                    item.classList.toggle("is-active", index === currentStep);
+                });
+                stepLabel.textContent = labels[currentStep] || "Memproses data";
+            }, 1800);
+
+            progressTimer = window.setInterval(() => {
+                currentProgress = Math.min(currentProgress + Math.ceil(Math.random() * 9), 92);
+                progress.style.width = `${currentProgress}%`;
+                percentLabel.textContent = `${currentProgress}%`;
+            }, 700);
+        }
+
+        document.querySelectorAll("form[data-import-loading]").forEach((form) => {
+            form.addEventListener("submit", () => {
+                if (!form.checkValidity()) {
+                    return;
+                }
+
+                showImportLoading(form);
+                form.querySelectorAll("button[type='submit']").forEach((button) => {
+                    button.disabled = true;
+                    button.classList.add("cursor-wait", "opacity-75");
+                });
+            });
+        });
+
+        window.addEventListener("pageshow", () => {
+            if (stepTimer) {
+                window.clearInterval(stepTimer);
+            }
+            if (progressTimer) {
+                window.clearInterval(progressTimer);
+            }
+            overlay.classList.add("hidden");
+            overlay.classList.remove("is-visible");
+            overlay.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("overflow-hidden");
+        });
+    })();
+</script>

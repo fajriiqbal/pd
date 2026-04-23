@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Data Guru | PDM{% endblock %}
+{% block page_kicker %}Modul Guru{% endblock %}
+{% block page_title %}Pusat data guru{% endblock %}
+{% block page_description %}Menu ini membantu operator memantau data tenaga pendidik, NIP, mapel, dan status kerja dengan cepat.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    {% include "teachers/_teacher_nav.html" %}
+
+    {% if import_result %}
+        <div class="rounded-[28px] border border-emerald-200 bg-white p-5 shadow-soft">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Import guru</p>
+                    <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">{{ import_result.title }}</h2>
+                </div>
+                <a href="{% url 'teachers:list' %}" class="inline-flex justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+                    Tutup ringkasan
+                </a>
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-3">
+                <div class="rounded-2xl bg-emerald-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-emerald-700">Baru</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ import_result.created|default:0 }}</p>
+                </div>
+                <div class="rounded-2xl bg-sky-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-sky-700">Update</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ import_result.updated|default:0 }}</p>
+                </div>
+                <div class="rounded-2xl bg-rose-50 px-4 py-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-rose-700">Gagal</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ import_result.failed|default:0 }}</p>
+                </div>
+            </div>
+
+            {% if import_result.errors %}
+                <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                    <p class="font-medium text-rose-800">Beberapa baris gagal diproses</p>
+                    <div class="mt-3 max-h-56 space-y-2 overflow-y-auto text-sm text-rose-700">
+                        {% for error in import_result.errors %}
+                            <p>Sheet {{ error.sheet }} | Baris {{ error.row }} | {{ error.message }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="grid gap-4 md:grid-cols-3">
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Guru aktif</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ active_teacher_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Guru punya mapel</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ assigned_teacher_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Tugas tambahan aktif</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ active_task_count }}</p>
+        </article>
+    </div>
+
+    <div class="flex flex-col gap-4 rounded-[2rem] border border-white/70 bg-white p-6 shadow-soft">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="max-w-2xl">
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-brand-700">Data Guru</p>
+                <h2 class="mt-2 text-2xl font-black text-slate-900">Data guru madrasah</h2>
+                <p class="mt-2 text-sm text-slate-500">Semua guru dan status kepegawaiannya bisa dicek dari satu layar. Pengaturan mapel dan tugas tambahan tersedia pada submenu di atas.</p>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <form
+                    method="post"
+                    action="{% url 'teachers:import_preview' %}"
+                    enctype="multipart/form-data"
+                    data-import-loading
+                    data-loading-title="Membaca file Excel guru"
+                    data-loading-message="Sistem sedang mengunggah file guru, membaca header sesuai template, dan menyiapkan preview import."
+                    data-loading-steps="Mengunggah file|Membaca template guru|Membuat preview"
+                    class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center"
+                >
+                    {% csrf_token %}
+                    <input type="file" name="excel_file" accept=".xlsx" required class="block max-w-[220px] text-xs text-slate-500 file:mr-3 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:bg-slate-800">
+                    <input type="password" name="default_password" placeholder="Password default" required class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none">
+                    <button type="submit" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100">
+                        Preview import
+                    </button>
+                </form>
+                <a href="{% url 'teachers:import_template' %}" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-center text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100">
+                    Download template
+                </a>
+                <a href="{% url 'teachers:add' %}" class="rounded-2xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800">
+                    Tambah guru
+                </a>
+                <a href="{% url 'teachers:mutation_list' %}" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-center text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100">
+                    Mutasi guru
+                </a>
+            </div>
+        </div>
+        <form method="get" class="w-full md:max-w-md">
+            <label for="search-teacher" class="sr-only">Cari guru</label>
+            <input
+                id="search-teacher"
+                type="text"
+                name="q"
+                value="{{ query }}"
+                placeholder="Cari nama, NIP, atau mapel"
+                class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-brand-500 focus:outline-none"
+            >
+        </form>
+    </div>
+
+    <div class="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Nama</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Username</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">NIP</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Mapel</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for teacher in teachers %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4">
+                                <p class="font-semibold text-slate-900">{{ teacher.user.full_name }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ teacher.get_employment_status_display }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">{{ teacher.user.username }}</td>
+                            <td class="px-6 py-4 text-slate-600">{{ teacher.nip|default:"Belum diisi" }}</td>
+                            <td class="px-6 py-4 text-slate-600">
+                                <p>{{ teacher.subject|default:"-" }}</p>
+                                <p class="mt-1 text-xs text-slate-400">{{ teacher.active_teaching_count }} pengaturan mapel aktif</p>
+                                <p class="mt-1 text-xs text-slate-400">{{ teacher.total_jtm }} JTM import/manual</p>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-wrap gap-2">
+                                    {% if teacher.is_active %}
+                                        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Data aktif</span>
+                                    {% else %}
+                                        <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">Data nonaktif</span>
+                                    {% endif %}
+                                    {% if teacher.user.is_school_active %}
+                                        <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">Akun aktif</span>
+                                    {% else %}
+                                        <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">Akun nonaktif</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-wrap gap-2">
+                                    <a href="{% url 'teachers:edit' teacher.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-white">Edit</a>
+                                    <a href="{% url 'teachers:teaching_assignments' %}?q={{ teacher.user.full_name|urlencode }}" class="rounded-full border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50">Mapel</a>
+                                    <a href="{% url 'teachers:additional_tasks' %}?q={{ teacher.user.full_name|urlencode }}" class="rounded-full border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-50">Tugas</a>
+                                    <a href="{% url 'teachers:delete' teacher.pk %}" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-50">Hapus</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-sm text-slate-500">Belum ada data guru yang cocok dengan pencarian.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% include "students/_import_loading_overlay.html" %}
+{% endblock %}

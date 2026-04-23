@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Validasi Ijazah | PDM{% endblock %}
+{% block page_kicker %}Validasi Alumni{% endblock %}
+{% block page_title %}Validasi ijazah {{ alumni.full_name }}{% endblock %}
+{% block page_description %}Cocokkan nama pada sistem pemerintah, ijazah, KK, dan akta untuk memastikan arsip alumni bersih dan siap dipakai.{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-4xl space-y-6">
+    <div class="rounded-[28px] border border-white/80 bg-white p-6 shadow-soft">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <p class="text-sm text-slate-500">Profil alumni</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{{ alumni.full_name }}</h2>
+                <p class="mt-2 text-sm text-slate-500">NIS {{ alumni.nis|default:"-" }} · NISN {{ alumni.nisn|default:"-" }} · Kelas akhir {{ alumni.class_name|default:"-" }}</p>
+            </div>
+            <a href="{% url 'students:alumni_detail' alumni.pk %}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Kembali</a>
+        </div>
+
+        <div class="mt-5 grid gap-3 md:grid-cols-2">
+            <div class="rounded-2xl bg-slate-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Panduan kerja</p>
+                <p class="mt-2 text-sm leading-6 text-slate-600">Masukkan nama dari sistem pemerintah lalu cocokkan dengan nama pada ijazah, KK, dan akta. Jika ada beda ejaan, tulis di catatan.</p>
+            </div>
+            <div class="rounded-2xl bg-emerald-50 px-4 py-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-emerald-700">Saran profesional</p>
+                <p class="mt-2 text-sm leading-6 text-emerald-800">Gunakan status <span class="font-semibold">Cocok</span> jika semua sumber konsisten, dan <span class="font-semibold">Perlu revisi</span> jika ada perbedaan kecil yang masih bisa diperbaiki.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-[28px] border border-white/80 bg-white p-6 shadow-soft">
+        <form method="post" class="grid gap-4 md:grid-cols-2">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="{% if field.name == 'notes' %}md:col-span-2{% endif %}">
+                    <label class="text-sm font-medium text-slate-700" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <p class="mt-1 text-xs font-medium text-rose-600">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            <div class="md:col-span-2 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+                <button type="submit" class="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Simpan validasi</button>
+                <a href="{% url 'students:alumni_detail' alumni.pk %}" class="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Batal</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
