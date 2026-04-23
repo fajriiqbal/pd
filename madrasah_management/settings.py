@@ -18,6 +18,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-ganti-dengan-secret-key-sendiri")
 DEBUG = os.getenv("DEBUG", "True").lower() in {"1", "true", "yes", "on"}
 ALLOWED_HOSTS: list[str] = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "").split(",") if host.strip()]
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = [
+        "pdm.mtssunankalijagatulung.sch.id",
+        "mtssunankalijagatulung.sch.id",
+        "localhost",
+        "127.0.0.1",
+    ]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
