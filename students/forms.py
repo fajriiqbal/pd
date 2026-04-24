@@ -1,3 +1,5 @@
+import zipfile
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -18,6 +20,35 @@ BASE_INPUT_CLASS = (
     "mt-1 w-full rounded-xl border border-slate-200 bg-white/95 px-3.5 py-2.5 "
     "text-sm text-slate-900 shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-0"
 )
+
+
+class BackupRestoreUploadForm(forms.Form):
+    backup_file = forms.FileField(
+        label="File backup ZIP",
+        help_text="Pilih file .zip hasil backup dari menu backup & restore.",
+        widget=forms.ClearableFileInput(
+            attrs={
+                "class": BASE_INPUT_CLASS,
+                "accept": ".zip",
+            }
+        ),
+    )
+    confirm_restore = forms.BooleanField(
+        label="Saya paham restore akan mengganti data saat ini",
+        required=True,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900",
+            }
+        ),
+    )
+
+    def clean_backup_file(self):
+        uploaded_file = self.cleaned_data["backup_file"]
+        if not zipfile.is_zipfile(uploaded_file):
+            raise ValidationError("File backup harus berupa ZIP yang valid.")
+        uploaded_file.seek(0)
+        return uploaded_file
 
 
 class StudentImportUploadForm(forms.Form):

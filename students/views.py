@@ -6,15 +6,18 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from accounts.models import CustomUser
 from accounts.audit import record_activity
-from academics.models import GradeBook, SchoolClass, StudyGroup
+from academics.models import AcademicYear, GradeBook, SchoolClass, StudyGroup
+from teachers.models import TeacherProfile
 
+from .backup_utils import build_backup_archive, restore_backup_archive
 from .forms import PromotionStartForm, StudentAlumniDocumentForm, StudentAlumniValidationForm
-from .forms import StudentDocumentForm, StudentImportUploadForm, StudentMutationRecordForm, StudentRecordForm
+from .forms import BackupRestoreUploadForm, StudentDocumentForm, StudentImportUploadForm, StudentMutationRecordForm, StudentRecordForm
 from .import_utils import (
     build_student_import_preview,
     delete_import_preview,
@@ -52,6 +55,51 @@ def _can_manage_student(user, student):
 
 def _is_admin_user(user):
     return user.is_authenticated and (user.is_superuser or user.role == CustomUser.Role.ADMIN)
+
+
+def _backup_restore_context(form=None):
+    return {
+        "form": form or BackupRestoreUploadForm(),
+        "page_kicker": "Backup Data",
+        "page_title": "Backup & restore data",
+        "page_description": "Unduh snapshot seluruh data aplikasi dalam format ZIP, lalu pulihkan kapan saja dari menu yang sama.",
+        "student_count": StudentProfile.objects.count(),
+        "teacher_count": TeacherProfile.objects.count(),
+        "academic_year_count": AcademicYear.objects.count(),
+        "school_class_count": SchoolClass.objects.count(),
+        "study_group_count": StudyGroup.objects.count(),
+        "student_document_count": StudentDocument.objects.count(),
+        "alumni_count": StudentAlumniArchive.objects.count(),
+    }
+
+
+@login_required
+def backup_restore(request):
+    if not _is_admin_user(request.user):
+        raise PermissionDenied
+
+    if request.method == "POST" and request.POST.get("action") == "download":
+        archive_bytes, manifest = build_backup_archive()
+        response = HttpResponse(archive_bytes, content_type="application/zip")
+        response["Content-Disposition"] = f'attachment; filename="{manifest["backup_file"]}"'
+        return response
+
+    if request.method == "POST" and request.POST.get("action") == "restore":
+        form = BackupRestoreUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                result = restore_backup_archive(form.cleaned_data["backup_file"])
+            except Exception as exc:  # pragma: no cover - defensive guard for operator-facing action
+                messages.error(request, f"Restore gagal: {exc}")
+            else:
+                messages.success(
+                    request,
+                    f"Restore selesai. {result['restored_media_count']} file media berhasil dipulihkan.",
+                )
+                return redirect("students:backup_restore")
+        return render(request, "students/backup_restore.html", _backup_restore_context(form))
+
+    return render(request, "students/backup_restore.html", _backup_restore_context())
 
 
 def _source_students_for_promotion(promotion_run):

@@ -1,7 +1,10 @@
+import shutil
 from io import BytesIO
+from pathlib import Path
+import zipfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from academics.models import AcademicYear, SchoolClass, StudyGroup
@@ -11,6 +14,7 @@ from .import_utils import build_student_import_preview, execute_student_import
 from .models import (
     PromotionRun,
     PromotionRunItem,
+    StudentDocument,
     StudentAlumniArchive,
     StudentAlumniDocument,
     StudentAlumniValidation,
@@ -597,3 +601,95 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertEqual(self.student_7a.documents.count(), 0)
         self.assertTrue(ActivityLog.objects.filter(module="Berkas Siswa", action="upload").exists())
         self.assertTrue(ActivityLog.objects.filter(module="Berkas Siswa", action="delete").exists())
+
+
+class StudentBackupRestoreTests(TestCase):
+    def setUp(self):
+        self.media_root = Path(__file__).resolve().parents[1] / "media" / ".tmp_test_media"
+        self.media_root.mkdir(parents=True, exist_ok=True)
+        self.media_override = override_settings(MEDIA_ROOT=self.media_root)
+        self.media_override.enable()
+        self.addCleanup(self.media_override.disable)
+        self.addCleanup(shutil.rmtree, self.media_root, True)
+
+        self.operator = CustomUser.objects.create_user(
+            username="operator-backup",
+            password="rahasia123",
+            full_name="Operator Backup",
+            role=CustomUser.Role.ADMIN,
+        )
+        self.client.force_login(self.operator)
+
+        self.academic_year = AcademicYear.objects.create(
+            name="2025/2026",
+            start_date="2025-07-01",
+            end_date="2026-06-30",
+            is_active=True,
+        )
+        self.school_class = SchoolClass.objects.create(name="Kelas 7", level_order=7)
+        self.study_group = StudyGroup.objects.create(
+            academic_year=self.academic_year,
+            school_class=self.school_class,
+            name="7A",
+        )
+        student_user = CustomUser.objects.create_user(
+            username="backup-siswa",
+            password="rahasia123",
+            full_name="Siswa Backup",
+            role=CustomUser.Role.STUDENT,
+        )
+        self.student = StudentProfile.objects.create(
+            user=student_user,
+            nis="7009",
+            nisn="700900",
+            gender=StudentProfile.Gender.MALE,
+            class_name=self.study_group.name,
+            study_group=self.study_group,
+            entry_year=2025,
+            is_active=True,
+        )
+        document_path = self.media_root / "student_documents" / "dokumen-scan.txt"
+        document_path.parent.mkdir(parents=True, exist_ok=True)
+        document_path.write_bytes(b"backup-content")
+        self.document = StudentDocument.objects.create(
+            student=self.student,
+            document_type=StudentDocument.DocumentType.OTHER,
+            title="Scan Dokumen",
+            file="student_documents/dokumen-scan.txt",
+        )
+
+    def test_backup_download_contains_database_and_media(self):
+        response = self.client.post(reverse("students:backup_restore"), {"action": "download"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/zip")
+
+        archive = zipfile.ZipFile(BytesIO(response.content))
+        members = set(archive.namelist())
+        self.assertIn("data.json", members)
+        self.assertIn("manifest.json", members)
+        self.assertIn("media/student_documents/dokumen-scan.txt", members)
+
+    def test_restore_roundtrip_rebuilds_database_and_media(self):
+        download_response = self.client.post(reverse("students:backup_restore"), {"action": "download"})
+        backup_file = SimpleUploadedFile(
+            "pdm-backup.zip",
+            download_response.content,
+            content_type="application/zip",
+        )
+
+        restore_response = self.client.post(
+            reverse("students:backup_restore"),
+            {
+                "action": "restore",
+                "backup_file": backup_file,
+                "confirm_restore": "on",
+            },
+        )
+
+        self.assertEqual(restore_response.status_code, 302)
+        self.assertEqual(StudentProfile.objects.count(), 1)
+        self.assertEqual(StudentDocument.objects.count(), 1)
+        restored_student = StudentProfile.objects.select_related("user").get(nis="7009")
+        self.assertEqual(restored_student.user.full_name, "Siswa Backup")
+        self.assertTrue((self.media_root / "student_documents" / "dokumen-scan.txt").exists())
