@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 import zipfile
 
+from django.core import signing
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -23,6 +24,7 @@ from .models import (
     StudentEnrollment,
     StudentProfile,
 )
+from .views import MUTATION_QR_SALT
 
 
 try:
@@ -451,6 +453,29 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertTrue(response.content.startswith(b"%PDF-"))
         self.assertIn(b"SURAT MUTASI SISWA", response.content)
         self.assertIn(b"Kepala Madrasah", response.content)
+
+    def test_public_mutation_letter_url_returns_pdf(self):
+        mutation = StudentMutationRecord.objects.create(
+            student=self.student_7a,
+            direction=StudentMutationRecord.Direction.OUTBOUND,
+            mutation_date="2026-04-23",
+            origin_school_name="MTs Asal",
+            origin_school_npsn="12345678",
+            destination_school_name="MTs Tujuan",
+            destination_school_npsn="87654321",
+            reason="Pindah domisili",
+            notes="Surat otomatis",
+            created_by=self.operator,
+        )
+        token = signing.Signer(salt=MUTATION_QR_SALT).sign(str(mutation.pk))
+
+        response = self.client.get(reverse("students:mutation_letter_public", args=[token]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("inline; filename=", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF-"))
+        self.assertIn(b"SURAT MUTASI SISWA", response.content)
 
     def test_promotion_workflow_allows_same_year_graduation_for_terminal_class(self):
         school_class_9 = SchoolClass.objects.create(name="Kelas 9", level_order=9)

@@ -3,11 +3,13 @@ from collections import Counter
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core import signing
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import CustomUser
@@ -26,6 +28,8 @@ from .import_utils import (
     load_import_preview,
     save_import_preview,
 )
+
+MUTATION_QR_SALT = "student-mutation-letter-qr"
 from .models import (
     PromotionRun,
     PromotionRunItem,
@@ -487,6 +491,23 @@ def student_mutation_create(request):
     )
 
 
+def _build_mutation_letter_url(request, mutation):
+    token = signing.Signer(salt=MUTATION_QR_SALT).sign(str(mutation.pk))
+    return request.build_absolute_uri(reverse("students:mutation_letter_public", args=[token]))
+
+
+def _build_mutation_letter_response(request, mutation, *, download=True):
+    if mutation.direction != StudentMutationRecord.Direction.OUTBOUND:
+        raise MutationLetterError("Surat PDF hanya tersedia untuk mutasi keluar.")
+
+    qr_payload = _build_mutation_letter_url(request, mutation)
+    pdf_bytes, filename = build_student_mutation_letter_pdf(mutation, qr_payload=qr_payload)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    disposition = "attachment" if download else "inline"
+    response["Content-Disposition"] = f'{disposition}; filename="{filename}"'
+    return response
+
+
 @login_required
 def student_mutation_letter(request, pk):
     mutation = get_object_or_404(
@@ -497,19 +518,33 @@ def student_mutation_letter(request, pk):
         ),
         pk=pk,
     )
-    if mutation.direction != StudentMutationRecord.Direction.OUTBOUND:
-        messages.error(request, "Surat PDF hanya tersedia untuk mutasi keluar.")
-        return redirect("students:mutation_list")
 
     try:
-        pdf_bytes, filename = build_student_mutation_letter_pdf(mutation)
+        return _build_mutation_letter_response(request, mutation, download=True)
     except MutationLetterError as exc:
         messages.error(request, str(exc))
         return redirect("students:mutation_list")
 
-    response = HttpResponse(pdf_bytes, content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
-    return response
+
+def student_mutation_letter_public(request, token):
+    try:
+        mutation_pk = int(signing.Signer(salt=MUTATION_QR_SALT).unsign(token))
+    except (signing.BadSignature, ValueError):
+        return HttpResponse("Tautan verifikasi tidak valid.", status=404)
+
+    mutation = get_object_or_404(
+        StudentMutationRecord.objects.select_related(
+            "student__user",
+            "origin_study_group__school_class",
+            "destination_study_group__school_class",
+        ),
+        pk=mutation_pk,
+    )
+
+    try:
+        return _build_mutation_letter_response(request, mutation, download=False)
+    except MutationLetterError:
+        return HttpResponse("Surat mutasi tidak dapat ditampilkan.", status=404)
 
 
 @login_required

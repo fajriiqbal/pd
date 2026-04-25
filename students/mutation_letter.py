@@ -7,6 +7,9 @@ from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.utils import timezone
 
+import qrcode
+from PIL import Image, ImageDraw
+
 from teachers.utils import get_headmaster_teacher
 
 
@@ -159,6 +162,49 @@ def _draw_code39(x, y, width, height, value):
         if index < len(encoded) - 1:
             cursor += narrow
     return b"\n".join(commands)
+
+
+def _build_qr_image_bytes(payload, logo_path=None):
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=12,
+        border=2,
+    )
+    qr.add_data(payload)
+    qr.make(fit=True)
+    image = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+
+    if logo_path:
+        try:
+            logo = Image.open(logo_path).convert("RGBA")
+        except Exception:  # pragma: no cover - defensive guard for operator-facing output
+            logo = None
+        if logo:
+            qr_width, qr_height = image.size
+            logo_size = max(20, qr_width // 4)
+            logo.thumbnail((logo_size, logo_size), Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS)
+            logo_x = (qr_width - logo.width) // 2
+            logo_y = (qr_height - logo.height) // 2
+
+            canvas = image.convert("RGBA")
+            draw = ImageDraw.Draw(canvas)
+            padding = max(4, qr_width // 30)
+            draw.rounded_rectangle(
+                (
+                    logo_x - padding,
+                    logo_y - padding,
+                    logo_x + logo.width + padding,
+                    logo_y + logo.height + padding,
+                ),
+                radius=padding,
+                fill="white",
+            )
+            canvas.paste(logo, (logo_x, logo_y), logo)
+            image = canvas.convert("RGB")
+
+    width, height = image.size
+    return width, height, zlib.compress(image.tobytes())
 
 
 QR_VERSION = 3
@@ -619,7 +665,7 @@ def _build_code(mutation):
     return f"{VERIFICATION_PREFIX}-{mutation.pk:05d}-{mutation.mutation_date:%Y%m%d}"
 
 
-def _build_content(mutation, headmaster, verification_code, issue_date, logo_exists, qr_matrix):
+def _build_content(mutation, headmaster, verification_code, issue_date, logo_exists):
     lines = []
     page_height = A4_HEIGHT
     page_width = A4_WIDTH
@@ -639,36 +685,27 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
 
     if logo_exists:
         lines.append(b"q")
-        lines.append(f"60 0 0 60 44 {page_height - 92:.2f} cm /Logo Do Q".encode("ascii"))
+        lines.append(f"58 0 0 58 44 {page_height - 94:.2f} cm /Logo Do Q".encode("ascii"))
 
     # Header
-    lines.append(text(118, page_height - 44, SCHOOL_NAME, size=16, bold=True))
-    lines.append(text(118, page_height - 62, f"{SCHOOL_LOCATION}", size=13, bold=True))
-    lines.append(text(118, page_height - 78, "Jalan sesuai data madrasah", size=8))
-    lines.append(text(118, page_height - 90, "Email / Telp: sesuai data madrasah", size=8))
-    lines.append(line(44, page_height - 108, 551, page_height - 108, width=1))
+    header_x = 124
+    lines.append(text(header_x, page_height - 40, SCHOOL_NAME, size=15, bold=True))
+    lines.append(text(header_x, page_height - 58, f"{SCHOOL_LOCATION}", size=12.5, bold=True))
+    lines.append(text(header_x, page_height - 74, "Jalan sesuai data madrasah", size=8.5))
+    lines.append(text(header_x, page_height - 86, "Email / Telp: sesuai data madrasah", size=8.5))
+    lines.append(line(44, page_height - 106, 551, page_height - 106, width=1))
 
     # Title
-    lines.append(centered(page_width / 2, page_height - 142, "SURAT MUTASI SISWA", size=15, bold=True))
+    lines.append(centered(page_width / 2, page_height - 144, "SURAT MUTASI SISWA", size=15.5, bold=True))
     lines.append(centered(page_width / 2, page_height - 160, f"Nomor: {verification_code}", size=10))
 
-    # Main body box
-    box_left = 44
-    box_top = page_height - 184
-    box_right = 551
-    box_bottom = 300
-    lines.append(f"1 1 1 rg {box_left:.2f} {box_bottom:.2f} {box_right - box_left:.2f} {box_top - box_bottom:.2f} re f".encode("ascii"))
-    lines.append(line(box_left, box_bottom, box_right, box_bottom, width=0.8))
-    lines.append(line(box_left, box_top, box_right, box_top, width=0.8))
-    lines.append(line(box_left, box_bottom, box_left, box_top, width=0.8))
-    lines.append(line(box_right, box_bottom, box_right, box_top, width=0.8))
-
-    intro_y = box_top - 24
-    lines.append(text(60, intro_y, "Yang bertanda tangan di bawah ini:", size=10, bold=True))
-    lines.append(text(60, intro_y - 18, f"Nama pejabat : {headmaster.teacher_name}", size=10))
-    lines.append(text(60, intro_y - 32, f"Jabatan      : {headmaster.task_name}", size=10))
-    lines.append(text(60, intro_y - 46, f"NIP          : {headmaster.nip or '-'}", size=10))
-    lines.append(text(60, intro_y - 64, "Menerangkan bahwa:", size=10, bold=True))
+    # Body
+    body_top = page_height - 186
+    lines.append(text(60, body_top, "Yang bertanda tangan di bawah ini:", size=10.2, bold=True))
+    lines.append(text(60, body_top - 16, f"Nama pejabat : {headmaster.teacher_name}", size=10))
+    lines.append(text(60, body_top - 30, f"Jabatan      : {headmaster.task_name}", size=10))
+    lines.append(text(60, body_top - 44, f"NIP          : {headmaster.nip or '-'}", size=10))
+    lines.append(text(60, body_top - 62, "Menerangkan bahwa:", size=10.2, bold=True))
 
     student_lines = [
         ("Nama siswa", mutation.student.user.full_name),
@@ -686,57 +723,49 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
     ]
     label_x = 60
     value_x = 175
-    current_y = intro_y - 80
+    current_y = body_top - 82
     for label, value in student_lines:
+        wrapped = _wrap_text(str(value), limit=54)
         lines.append(text(label_x, current_y, f"{label}", size=10, bold=True))
-        for part_index, part in enumerate(_wrap_text(str(value), limit=54)):
-            lines.append(text(value_x, current_y, part, size=10))
-            current_y -= 14
-        current_y -= 2
+        for part_index, part in enumerate(wrapped):
+            lines.append(text(value_x, current_y - (part_index * 12), part, size=10))
+        current_y -= max(18, 12 * len(wrapped) + 6)
 
-    closing_y = max(current_y - 4, 334)
-    lines.append(text(60, closing_y, "Surat ini dibuat berdasarkan data mutasi pada sistem madrasah.", size=9.5))
-    lines.append(text(60, closing_y - 14, "Gunakan QR code di bawah sebagai verifikasi keaslian surat.", size=9.5))
+    closing_y = max(current_y - 8, 336)
+    lines.append(text(60, closing_y, "Surat ini diterbitkan otomatis dari sistem madrasah dan dapat diverifikasi lewat QR code.", size=9.2))
+    lines.append(text(60, closing_y - 14, "Jika dipindai, QR code akan membuka surat mutasi ini.", size=9.2))
 
     # Signature block
     sig_left = 352
     sig_right = 548
     sig_top = 258
-    qr_size = 60
+    qr_size = 42
     qr_left = sig_left + ((sig_right - sig_left) - qr_size) / 2
-    qr_bottom = 168
+    qr_bottom = 182
 
     lines.append(text(sig_left, sig_top, f"Tulung, {_id_text(issue_date)}", size=10))
     lines.append(text(sig_left, sig_top - 16, "Kepala Madrasah", size=10))
     lines.append(text(sig_left, sig_top - 30, " ", size=10))
 
     # QR with centered logo
-    white_pad = 4
-    lines.append(f"1 1 1 rg {qr_left - white_pad:.2f} {qr_bottom - white_pad:.2f} {qr_size + white_pad * 2:.2f} {qr_size + white_pad * 2:.2f} re f".encode("ascii"))
-    lines.append(_draw_qr_matrix(qr_left, qr_bottom, qr_size, qr_matrix))
+    lines.append(b"q")
+    lines.append(f"{qr_size:.2f} 0 0 {qr_size:.2f} {qr_left:.2f} {qr_bottom:.2f} cm /QR Do Q".encode("ascii"))
 
-    if logo_exists:
-        logo_box = 16
-        logo_left = qr_left + (qr_size - logo_box) / 2
-        logo_bottom = qr_bottom + (qr_size - logo_box) / 2
-        lines.append(f"1 1 1 rg {logo_left - 1.5:.2f} {logo_bottom - 1.5:.2f} {logo_box + 3:.2f} {logo_box + 3:.2f} re f".encode("ascii"))
-        lines.append(b"q")
-        lines.append(f"{logo_box:.2f} 0 0 {logo_box:.2f} {logo_left:.2f} {logo_bottom:.2f} cm /Logo Do Q".encode("ascii"))
-
-    lines.append(text(sig_left, 144, headmaster.teacher_name, size=11, bold=True))
-    lines.append(text(sig_left, 128, f"NIP. {headmaster.nip or '-'}", size=10))
-    lines.append(text(sig_left, 112, f"Kode verifikasi: {verification_code}", size=8))
+    lines.append(text(sig_left, 138, headmaster.teacher_name, size=11, bold=True))
+    lines.append(text(sig_left, 122, f"NIP. {headmaster.nip or '-'}", size=10))
+    lines.append(text(sig_left, 106, f"Kode verifikasi: {verification_code}", size=8))
 
     return b"\n".join(lines)
 
 
-def _build_pdf_bytes(mutation):
+def _build_pdf_bytes(mutation, qr_payload=None):
     headmaster = _get_headmaster_info()
     issue_date = timezone.localdate()
     verification_code = _build_code(mutation)
     logo_path = _find_logo_path()
     logo_exists = logo_path is not None
-    qr_matrix = _build_qr_matrix(verification_code)
+    qr_image_payload = qr_payload or verification_code
+    qr_width, qr_height, qr_rgb = _build_qr_image_bytes(qr_image_payload, logo_path=logo_path)
 
     objects = []
 
@@ -755,14 +784,21 @@ def _build_pdf_bytes(mutation):
             f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length {len(compressed_rgb)} >>"
         ).encode("ascii")
         logo_id = add_object(image_dict + b"\nstream\n" + compressed_rgb + b"\nendstream")
-    content_stream = _build_content(mutation, headmaster, verification_code, issue_date, logo_exists, qr_matrix)
+    qr_dict = (
+        f"<< /Type /XObject /Subtype /Image /Width {qr_width} /Height {qr_height} "
+        f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length {len(qr_rgb)} >>"
+    ).encode("ascii")
+    qr_id = add_object(qr_dict + b"\nstream\n" + qr_rgb + b"\nendstream")
+    content_stream = _build_content(mutation, headmaster, verification_code, issue_date, logo_exists)
     content_id = add_object(f"<< /Length {len(content_stream)} >>".encode("ascii") + b"\nstream\n" + content_stream + b"\nendstream")
 
     resources_parts = [
         f"/Font << /F1 {font_regular_id} 0 R /F2 {font_bold_id} 0 R >>",
     ]
     if logo_id:
-        resources_parts.append(f"/XObject << /Logo {logo_id} 0 R >>")
+        resources_parts.append(f"/XObject << /Logo {logo_id} 0 R /QR {qr_id} 0 R >>")
+    else:
+        resources_parts.append(f"/XObject << /QR {qr_id} 0 R >>")
     resources = f"<< {' '.join(resources_parts)} >>".encode("ascii")
 
     page_parts = [
@@ -805,10 +841,10 @@ def _build_pdf_bytes(mutation):
     return b"".join(output + xref_lines + [trailer])
 
 
-def build_student_mutation_letter_pdf(mutation):
+def build_student_mutation_letter_pdf(mutation, qr_payload=None):
     if mutation.direction != mutation.Direction.OUTBOUND:
         raise MutationLetterError("Surat mutasi PDF hanya tersedia untuk mutasi keluar.")
 
-    pdf_bytes = _build_pdf_bytes(mutation)
+    pdf_bytes = _build_pdf_bytes(mutation, qr_payload=qr_payload)
     filename = f"surat-mutasi-{mutation.student.nis or mutation.student.pk}-{mutation.pk}.pdf"
     return pdf_bytes, filename

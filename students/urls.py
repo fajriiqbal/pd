@@ -10,6 +10,7 @@ urlpatterns = [
     path("mutations/", views.student_mutation_list, name="mutation_list"),
     path("mutations/add/", views.student_mutation_create, name="mutation_add"),
     path("mutations/<int:pk>/letter/", views.student_mutation_letter, name="mutation_letter"),
+    path("mutations/qr/<str:token>/", views.student_mutation_letter_public, name="mutation_letter_public"),
     path("alumni/", views.alumni_list, name="alumni_list"),
     path("alumni/<int:pk>/", views.alumni_detail, name="alumni_detail"),
     path("alumni/<int:pk>/validation/", views.alumni_validation_update, name="alumni_validation_update"),
