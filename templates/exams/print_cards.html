@@ -6,27 +6,28 @@
 <style>
     .print-paper {
         width: 210mm;
-        min-height: 297mm;
+        min-height: 330mm;
     }
 
     .card-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8mm;
     }
 
     .student-card {
         border-radius: 0;
-        padding: 14px 16px;
+        padding: 10px 12px;
     }
 
     .student-card-header {
         border-bottom: 2px solid #0f172a;
         border-radius: 0;
-        padding-bottom: 10px;
-        margin-bottom: 12px;
+        padding-bottom: 8px;
+        margin-bottom: 8px;
     }
 
     .student-card-body {
-        gap: 12px;
+        gap: 8px;
     }
 
     .student-identity,
@@ -42,15 +43,15 @@
     .school-header {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding-bottom: 10px;
-        margin-bottom: 10px;
+        gap: 10px;
+        padding-bottom: 8px;
+        margin-bottom: 8px;
         border-bottom: 2px solid #0f172a;
     }
 
     .school-header .brand-mark {
-        width: 46px;
-        height: 46px;
+        width: 40px;
+        height: 40px;
     }
 
     .school-header .header-text {
@@ -59,26 +60,36 @@
 
     .school-header .school-name {
         margin: 0;
-        font-size: 15px;
+        font-size: 13px;
         font-weight: 800;
         line-height: 1.2;
     }
 
     .school-header .school-address {
         margin: 3px 0 0;
-        font-size: 11px;
+        font-size: 10px;
         color: #475569;
         line-height: 1.35;
     }
 
+    .card-center-note {
+        margin: 0 0 8px;
+        text-align: center;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
     .card-section-label {
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
     .identity-row,
     .schedule-item,
     .schedule-item .note {
-        font-size: 11px;
+        font-size: 10px;
     }
 
     .schedule-item {
@@ -94,17 +105,18 @@
     @media print {
         .card-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            gap: 10mm;
+            gap: 7mm;
         }
 
         .student-card {
             page-break-inside: avoid;
             break-inside: avoid;
+            padding: 8px 10px;
         }
 
         .student-card-body {
             grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) !important;
-            gap: 8mm;
+            gap: 5mm;
         }
 
         .student-identity,
@@ -121,19 +133,19 @@
         }
 
         .school-header .brand-mark {
-            width: 42px;
-            height: 42px;
+            width: 36px;
+            height: 36px;
         }
 
         .school-header .school-name {
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .school-header .school-address,
         .identity-row,
         .schedule-item,
         .schedule-item .note {
-            font-size: 10px;
+            font-size: 9px;
         }
     }
 </style>
@@ -167,18 +179,18 @@
                     </div>
                 </div>
 
+                <p class="card-center-note">Kartu peserta ujian</p>
+
                 <div class="student-card-header">
                     <div>
-                        <p class="student-card-subtitle">Kartu peserta ujian</p>
-                        <h2 class="student-card-title">{{ card.student.user.full_name }}</h2>
+                        <h2 class="student-card-title" style="font-size:14px;">{{ card.student.user.full_name }}</h2>
                         <p class="student-card-subtitle">
                             {% if selected_group %}{{ selected_group.school_class.name }} - {{ selected_group.name }}{% endif %}
-                            {% if card.student.nis %} · NIS {{ card.student.nis }}{% endif %}
                         </p>
                     </div>
                     <div class="rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-right">
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">No. Peserta</p>
-                        <p class="mt-1 text-base font-bold text-slate-950">{{ card.participant_number }}</p>
+                        <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-500">No. Peserta</p>
+                        <p class="mt-1 text-sm font-bold text-slate-950">{{ card.participant_number }}</p>
                     </div>
                 </div>
 
@@ -186,6 +198,10 @@
                     <div class="student-identity">
                         <p class="card-section-label">Identitas Siswa</p>
                         <div class="identity-grid">
+                            <div class="identity-row">
+                                <span>Nama</span>
+                                <strong>{{ card.student.user.full_name }}</strong>
+                            </div>
                             <div class="identity-row">
                                 <span>NIS</span>
                                 <strong>{{ card.student.nis|default:"-" }}</strong>
@@ -201,6 +217,10 @@
                             <div class="identity-row">
                                 <span>Sesi</span>
                                 <strong>{% if selected_session %}{{ selected_session.name }}{% else %}-{% endif %}</strong>
+                            </div>
+                            <div class="identity-row">
+                                <span>Peserta</span>
+                                <strong>{{ card.participant_number }}</strong>
                             </div>
                         </div>
                     </div>
