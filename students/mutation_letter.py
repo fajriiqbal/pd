@@ -752,9 +752,9 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
     sig_left = 352
     sig_right = 548
     sig_top = 258
-    qr_size = 60
-    qr_left = sig_left + ((sig_right - sig_left) - qr_size) / 2
-    qr_bottom = 160
+    qr_size = 58
+    qr_left = sig_left + 2
+    qr_bottom = 156
 
     lines.append(text(sig_left, sig_top, f"Tulung, {_id_text(issue_date)}", size=10))
     lines.append(text(sig_left, sig_top - 16, "Kepala Madrasah", size=10))
