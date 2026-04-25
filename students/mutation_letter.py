@@ -753,8 +753,9 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
     sig_right = 548
     sig_top = 258
     qr_size = 54
-    qr_left = sig_left + ((sig_right - sig_left) - qr_size) / 2
+    qr_left = sig_left + 4
     qr_bottom = 150
+    sign_text_left = qr_left + qr_size + 12
 
     lines.append(text(sig_left, sig_top, f"Tulung, {_id_text(issue_date)}", size=10))
     lines.append(text(sig_left, sig_top - 16, "Kepala Madrasah", size=10))
@@ -764,9 +765,9 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
     lines.append(b"q")
     lines.append(f"{qr_size:.2f} 0 0 {qr_size:.2f} {qr_left:.2f} {qr_bottom:.2f} cm /QR Do Q".encode("ascii"))
 
-    lines.append(text(sig_left, 138, headmaster.teacher_name, size=11, bold=True))
-    lines.append(text(sig_left, 122, f"NIP. {headmaster.nip or '-'}", size=10))
-    lines.append(text(sig_left, 106, f"Kode verifikasi: {verification_code}", size=8))
+    lines.append(text(sign_text_left, 184, headmaster.teacher_name, size=11, bold=True))
+    lines.append(text(sign_text_left, 168, f"NIP. {headmaster.nip or '-'}", size=10))
+    lines.append(text(sign_text_left, 152, f"Kode verifikasi: {verification_code}", size=8))
 
     return b"\n".join(lines)
 
