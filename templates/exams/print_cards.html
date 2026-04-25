@@ -21,23 +21,77 @@
         <div class="paper-meta">
             <div><strong>Rombel:</strong> {{ selected_group.school_class.name }} - {{ selected_group.name }}</div>
             <div><strong>Tanggal cetak:</strong> {{ exam_date|date:"d M Y" }}</div>
+            <div><strong>Jadwal:</strong> {% if selected_schedule_session %}{{ selected_schedule_session.name }}{% else %}-{% endif %}</div>
         </div>
     {% endif %}
 
-    <div class="mt-5 card-grid">
+    <div class="card-grid mt-5">
         {% for card in cards %}
-            <article class="exam-card">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Kartu Ujian</p>
-                <h2 class="mt-2 text-xl font-bold text-slate-950">{{ card.student.user.full_name }}</h2>
-                <div class="mt-4 space-y-2 text-sm text-slate-700">
-                    <p><strong>NIS:</strong> {{ card.student.nis|default:"-" }}</p>
-                    <p><strong>NISN:</strong> {{ card.student.nisn|default:"-" }}</p>
-                    <p><strong>Kelas/Rombel:</strong> {{ card.student.study_group.school_class.name }} - {{ card.student.study_group.name }}</p>
-                    <p><strong>No. Peserta:</strong> {{ card.participant_number }}</p>
-                    <p><strong>Sesi:</strong> {{ selected_session.name }}</p>
+            <article class="student-card">
+                <div class="student-card-header">
+                    <div>
+                        <p class="student-card-subtitle">Kartu peserta ujian</p>
+                        <h2 class="student-card-title">{{ card.student.user.full_name }}</h2>
+                        <p class="student-card-subtitle">
+                            {% if selected_group %}{{ selected_group.school_class.name }} - {{ selected_group.name }}{% endif %}
+                            {% if card.student.nis %} · NIS {{ card.student.nis }}{% endif %}
+                        </p>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">No. Peserta</p>
+                        <p class="mt-1 text-lg font-bold text-slate-950">{{ card.participant_number }}</p>
+                    </div>
                 </div>
-                <div class="mt-4 rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-xs text-slate-500">
-                    Kartu ini digunakan untuk identitas peserta saat ujian. Simpan dan bawa saat pelaksanaan.
+
+                <div class="student-card-body">
+                    <div class="student-identity">
+                        <p class="card-section-label">Identitas Siswa</p>
+                        <div class="identity-grid">
+                            <div class="identity-row">
+                                <span>NIS</span>
+                                <strong>{{ card.student.nis|default:"-" }}</strong>
+                            </div>
+                            <div class="identity-row">
+                                <span>NISN</span>
+                                <strong>{{ card.student.nisn|default:"-" }}</strong>
+                            </div>
+                            <div class="identity-row">
+                                <span>Kelas / Rombel</span>
+                                <strong>{{ card.student.study_group.school_class.name }} - {{ card.student.study_group.name }}</strong>
+                            </div>
+                            <div class="identity-row">
+                                <span>Sesi</span>
+                                <strong>{% if selected_session %}{{ selected_session.name }}{% else %}-{% endif %}</strong>
+                            </div>
+                            <div class="identity-row">
+                                <span>Keterangan</span>
+                                <strong>Kartu wajib dibawa saat ujian</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="student-schedule">
+                        <p class="card-section-label">Jadwal Ujian</p>
+                        <div class="schedule-list">
+                            {% for item in schedule_items %}
+                                <div class="schedule-item {% if item.item_type == 'break' %}break{% endif %}">
+                                    <div class="row">
+                                        <span class="title">{{ item.title }}</span>
+                                        <span class="time">{{ item.start_time|time:"H:i" }} - {{ item.end_time|time:"H:i" }}</span>
+                                    </div>
+                                    <div class="note">
+                                        {{ item.exam_date|date:"D, d M Y" }}
+                                        {% if item.description %} · {{ item.description }}{% endif %}
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="schedule-item">
+                                    <div class="title">Belum ada jadwal ujian</div>
+                                    <div class="note">Tambahkan jadwal pada menu Jadwal ujian terlebih dahulu.</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             </article>
         {% empty %}

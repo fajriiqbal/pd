@@ -10,8 +10,8 @@ from accounts.models import CustomUser
 from institution.models import SchoolIdentity
 from students.models import StudentProfile
 
-from .forms import ExamPrintForm, ExamSessionForm
-from .models import ExamSession
+from .forms import ExamPrintForm, ExamScheduleItemForm, ExamSessionForm
+from .models import ExamScheduleItem, ExamSession
 
 
 def _is_exam_admin(user):
@@ -30,6 +30,7 @@ def _active_session():
 def _print_form(request):
     form = ExamPrintForm(request.GET or None)
     selected_session = None
+    selected_schedule_session = None
     selected_group = None
     exam_date = request.GET.get("exam_date") or timezone.localdate().isoformat()
     room_name = request.GET.get("room_name", "")
@@ -37,6 +38,7 @@ def _print_form(request):
 
     if form.is_valid():
         selected_session = form.cleaned_data.get("session") or _active_session()
+        selected_schedule_session = form.cleaned_data.get("schedule_session") or selected_session
         selected_group = form.cleaned_data.get("study_group")
         exam_date = form.cleaned_data.get("exam_date") or timezone.localdate()
         room_name = form.cleaned_data.get("room_name", "")
@@ -44,15 +46,31 @@ def _print_form(request):
     else:
         if request.GET:
             selected_session = _active_session()
+            selected_schedule_session = selected_session
             selected_group = None
 
-    return form, selected_session, selected_group, exam_date, room_name, supervisor_name
+    if not selected_schedule_session:
+        selected_schedule_session = selected_session
+
+    return form, selected_session, selected_schedule_session, selected_group, exam_date, room_name, supervisor_name
+
+
+def _session_schedule(session):
+    if not session:
+        return ExamScheduleItem.objects.none()
+    return (
+        ExamScheduleItem.objects.select_related("session", "session__academic_year")
+        .filter(session=session, is_active=True)
+        .order_by("exam_date", "start_time", "sort_order", "title")
+    )
 
 
 def _print_context(request, title, subtitle, extra=None):
     school_identity = SchoolIdentity.objects.first()
     active_session = _active_session()
     sessions = ExamSession.objects.select_related("academic_year").order_by("-is_active", "-start_date", "name")
+    schedule_session = extra.get("selected_schedule_session") if extra else None
+    schedule_items = _session_schedule(schedule_session or active_session)
     groups = StudyGroup.objects.select_related("academic_year", "school_class").filter(is_active=True).order_by(
         "school_class__level_order",
         "name",
@@ -65,6 +83,8 @@ def _print_context(request, title, subtitle, extra=None):
         "active_exam_session": active_session,
         "exam_sessions": sessions,
         "exam_groups": groups,
+        "selected_schedule_session": schedule_session or active_session,
+        "schedule_items": schedule_items,
     }
     if extra:
         context.update(extra)
@@ -93,6 +113,7 @@ def overview(request):
                 {"title": "Cetak daftar hadir", "url": "exams:attendance", "description": "Daftar hadir siap tanda tangan."},
                 {"title": "Cetak BAP", "url": "exams:bap", "description": "Berita acara pelaksanaan ujian."},
                 {"title": "Cetak label ruang", "url": "exams:room_label", "description": "Label besar untuk pintu atau meja ruang."},
+                {"title": "Jadwal ujian", "url": "exams:schedule_list", "description": "Atur mapel, jam ujian, dan istirahat."},
             ],
         },
     )
@@ -112,6 +133,114 @@ def session_list(request):
             "Kelola nama sesi, tahun ajaran, dan status aktif yang dipakai semua dokumen ujian.",
             {"sessions": sessions},
         ),
+    )
+
+
+@login_required
+def schedule_list(request):
+    _require_exam_admin(request)
+    session_id = request.GET.get("session")
+    selected_session = (
+        get_object_or_404(ExamSession, pk=session_id)
+        if session_id
+        else _active_session()
+    )
+    items = ExamScheduleItem.objects.select_related("session", "session__academic_year").order_by(
+        "exam_date",
+        "start_time",
+        "sort_order",
+        "title",
+    )
+    if selected_session:
+        items = items.filter(session=selected_session)
+    else:
+        items = items.none()
+    return render(
+        request,
+        "exams/schedule_list.html",
+        _print_context(
+            request,
+            "Jadwal Ujian",
+            "Susun urutan mapel, jam ujian, dan waktu istirahat untuk kartu peserta dan dokumen cetak.",
+            {
+                "sessions": ExamSession.objects.select_related("academic_year").order_by("-is_active", "-start_date", "name"),
+                "selected_session": selected_session,
+                "schedule_items": items,
+            },
+        ),
+    )
+
+
+@login_required
+def schedule_create(request):
+    _require_exam_admin(request)
+    form = ExamScheduleItemForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Jadwal ujian berhasil ditambahkan.")
+        return redirect("exams:schedule_list")
+
+    return render(
+        request,
+        "shared/form_page.html",
+        {
+            **_print_context(
+                request,
+                "Tambah jadwal ujian",
+                "Tambahkan mapel, jam ujian, atau jeda istirahat untuk sesi yang dipilih.",
+            ),
+            "form": form,
+            "submit_label": "Simpan jadwal",
+            "cancel_url": "exams:schedule_list",
+            "checkbox_fields": ["is_active"],
+        },
+    )
+
+
+@login_required
+def schedule_update(request, pk):
+    _require_exam_admin(request)
+    schedule_item = get_object_or_404(ExamScheduleItem, pk=pk)
+    form = ExamScheduleItemForm(request.POST or None, instance=schedule_item)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Jadwal ujian berhasil diperbarui.")
+        return redirect("exams:schedule_list")
+
+    return render(
+        request,
+        "shared/form_page.html",
+        {
+            **_print_context(
+                request,
+                f"Edit jadwal {schedule_item.title}",
+                "Perbarui jam, judul mapel, atau tanda istirahat.",
+            ),
+            "form": form,
+            "submit_label": "Simpan perubahan",
+            "cancel_url": "exams:schedule_list",
+            "checkbox_fields": ["is_active"],
+        },
+    )
+
+
+@login_required
+def schedule_delete(request, pk):
+    _require_exam_admin(request)
+    schedule_item = get_object_or_404(ExamScheduleItem, pk=pk)
+    if request.method == "POST":
+        schedule_item.delete()
+        messages.success(request, "Jadwal ujian berhasil dihapus.")
+        return redirect("exams:schedule_list")
+
+    return render(
+        request,
+        "shared/confirm_delete.html",
+        {
+            "item_name": schedule_item.title,
+            "item_type": "jadwal ujian",
+            "cancel_url": "exams:schedule_list",
+        },
     )
 
 
@@ -189,7 +318,7 @@ def session_delete(request, pk):
 
 
 def _selected_exam_data(request):
-    form, session, group, exam_date, room_name, supervisor_name = _print_form(request)
+    form, session, schedule_session, group, exam_date, room_name, supervisor_name = _print_form(request)
     if not session:
         session = _active_session()
     students = StudentProfile.objects.none()
@@ -199,13 +328,14 @@ def _selected_exam_data(request):
             .filter(is_active=True, study_group=group)
             .order_by("user__full_name")
         )
-    return form, session, group, exam_date, room_name, supervisor_name, students
+    schedule_items = _session_schedule(schedule_session or session)
+    return form, session, schedule_session or session, group, exam_date, room_name, supervisor_name, students, schedule_items
 
 
 @login_required
 def print_cards(request):
     _require_exam_admin(request)
-    form, session, group, exam_date, room_name, supervisor_name, students = _selected_exam_data(request)
+    form, session, schedule_session, group, exam_date, room_name, supervisor_name, students, schedule_items = _selected_exam_data(request)
     cards = [
         {
             "index": index + 1,
@@ -224,11 +354,13 @@ def print_cards(request):
             {
                 "form": form,
                 "selected_session": session,
+                "selected_schedule_session": schedule_session,
                 "selected_group": group,
                 "exam_date": exam_date,
                 "room_name": room_name,
                 "supervisor_name": supervisor_name,
                 "cards": cards,
+                "schedule_items": schedule_items,
                 "print_requested": request.GET.get("print") == "1",
             },
         ),
@@ -238,7 +370,7 @@ def print_cards(request):
 @login_required
 def print_attendance(request):
     _require_exam_admin(request)
-    form, session, group, exam_date, room_name, supervisor_name, students = _selected_exam_data(request)
+    form, session, schedule_session, group, exam_date, room_name, supervisor_name, students, schedule_items = _selected_exam_data(request)
     return render(
         request,
         "exams/print_attendance.html",
@@ -249,11 +381,13 @@ def print_attendance(request):
             {
                 "form": form,
                 "selected_session": session,
+                "selected_schedule_session": schedule_session,
                 "selected_group": group,
                 "exam_date": exam_date,
                 "room_name": room_name,
                 "supervisor_name": supervisor_name,
                 "students": students,
+                "schedule_items": schedule_items,
                 "print_requested": request.GET.get("print") == "1",
             },
         ),
@@ -263,7 +397,7 @@ def print_attendance(request):
 @login_required
 def print_bap(request):
     _require_exam_admin(request)
-    form, session, group, exam_date, room_name, supervisor_name, students = _selected_exam_data(request)
+    form, session, schedule_session, group, exam_date, room_name, supervisor_name, students, schedule_items = _selected_exam_data(request)
     school_identity = SchoolIdentity.objects.first()
     return render(
         request,
@@ -275,11 +409,13 @@ def print_bap(request):
             {
                 "form": form,
                 "selected_session": session,
+                "selected_schedule_session": schedule_session,
                 "selected_group": group,
                 "exam_date": exam_date,
                 "room_name": room_name,
                 "supervisor_name": supervisor_name,
                 "students": students,
+                "schedule_items": schedule_items,
                 "school_identity": school_identity,
                 "print_requested": request.GET.get("print") == "1",
             },
@@ -290,7 +426,7 @@ def print_bap(request):
 @login_required
 def print_room_label(request):
     _require_exam_admin(request)
-    form, session, group, exam_date, room_name, supervisor_name, _students = _selected_exam_data(request)
+    form, session, schedule_session, group, exam_date, room_name, supervisor_name, _students, schedule_items = _selected_exam_data(request)
     room_name = room_name or (group.room_name if group else "")
     return render(
         request,
@@ -302,10 +438,12 @@ def print_room_label(request):
             {
                 "form": form,
                 "selected_session": session,
+                "selected_schedule_session": schedule_session,
                 "selected_group": group,
                 "exam_date": exam_date,
                 "room_name": room_name,
                 "supervisor_name": supervisor_name,
+                "schedule_items": schedule_items,
                 "print_requested": request.GET.get("print") == "1",
             },
         ),

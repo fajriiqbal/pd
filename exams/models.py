@@ -41,3 +41,41 @@ class ExamSession(models.Model):
     def __str__(self) -> str:
         return f"{self.name} - {self.academic_year.name}"
 
+
+class ExamScheduleItem(models.Model):
+    class ItemType(models.TextChoices):
+        EXAM = "exam", "Mapel ujian"
+        BREAK = "break", "Istirahat"
+        OTHER = "other", "Lainnya"
+
+    session = models.ForeignKey(
+        ExamSession,
+        on_delete=models.CASCADE,
+        related_name="schedule_items",
+        verbose_name="Sesi ujian",
+    )
+    exam_date = models.DateField(verbose_name="Tanggal")
+    title = models.CharField(max_length=120, verbose_name="Nama kegiatan")
+    item_type = models.CharField(max_length=20, choices=ItemType.choices, default=ItemType.EXAM, verbose_name="Jenis")
+    start_time = models.TimeField(verbose_name="Jam mulai")
+    end_time = models.TimeField(verbose_name="Jam selesai")
+    description = models.CharField(max_length=255, blank=True, verbose_name="Keterangan")
+    sort_order = models.PositiveSmallIntegerField(default=1, verbose_name="Urutan")
+    is_active = models.BooleanField(default=True, verbose_name="Aktif")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("exam_date", "start_time", "sort_order", "title")
+        verbose_name = "Jadwal Ujian"
+        verbose_name_plural = "Jadwal Ujian"
+
+    def clean(self):
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValidationError({"end_time": "Jam selesai harus setelah jam mulai."})
+        if self.session_id and self.exam_date:
+            if self.exam_date < self.session.start_date or self.exam_date > self.session.end_date:
+                raise ValidationError({"exam_date": "Tanggal jadwal harus berada di dalam rentang sesi ujian."})
+
+    def __str__(self) -> str:
+        return f"{self.title} - {self.exam_date}"

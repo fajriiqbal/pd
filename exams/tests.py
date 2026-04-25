@@ -6,7 +6,7 @@ from accounts.models import CustomUser
 from institution.models import SchoolIdentity
 from students.models import StudentProfile
 
-from .models import ExamSession
+from .models import ExamScheduleItem, ExamSession
 
 
 class ExamMenuTests(TestCase):
@@ -51,6 +51,24 @@ class ExamMenuTests(TestCase):
             start_date="2026-11-10",
             end_date="2026-11-20",
             is_active=True,
+        )
+        ExamScheduleItem.objects.create(
+            session=self.session,
+            exam_date="2026-11-10",
+            title="IPA",
+            item_type=ExamScheduleItem.ItemType.EXAM,
+            start_time="07:30",
+            end_time="09:00",
+            sort_order=1,
+        )
+        ExamScheduleItem.objects.create(
+            session=self.session,
+            exam_date="2026-11-10",
+            title="Istirahat",
+            item_type=ExamScheduleItem.ItemType.BREAK,
+            start_time="09:00",
+            end_time="09:30",
+            sort_order=2,
         )
 
     def _create_student(self, username, full_name, nis, nisn):
@@ -103,3 +121,14 @@ class ExamMenuTests(TestCase):
         self.assertContains(response, "Kartu Ujian")
         self.assertContains(response, "Siswa Satu")
         self.assertContains(response, "PAS Ganjil")
+        self.assertContains(response, "Jadwal Ujian")
+        self.assertContains(response, "IPA")
+        self.assertContains(response, "07:30 - 09:00")
+
+    def test_schedule_list_renders_exam_timeline(self):
+        response = self.client.get(reverse("exams:schedule_list"), {"session": str(self.session.pk)})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Jadwal ujian")
+        self.assertContains(response, "IPA")
+        self.assertContains(response, "Istirahat")

@@ -4,7 +4,7 @@ from django.utils import timezone
 from academics.models import StudyGroup
 from institution.models import SchoolIdentity
 
-from .models import ExamSession
+from .models import ExamScheduleItem, ExamSession
 
 
 BASE_INPUT_CLASS = (
@@ -24,6 +24,33 @@ class ExamSessionForm(forms.ModelForm):
             "start_date": forms.DateInput(attrs={"class": BASE_INPUT_CLASS, "type": "date"}),
             "end_date": forms.DateInput(attrs={"class": BASE_INPUT_CLASS, "type": "date"}),
             "description": forms.Textarea(attrs={"class": BASE_INPUT_CLASS, "rows": 4, "placeholder": "Keterangan singkat sesi ujian"}),
+            "is_active": forms.CheckboxInput(attrs={"class": "mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900"}),
+        }
+
+
+class ExamScheduleItemForm(forms.ModelForm):
+    class Meta:
+        model = ExamScheduleItem
+        fields = [
+            "session",
+            "exam_date",
+            "title",
+            "item_type",
+            "start_time",
+            "end_time",
+            "description",
+            "sort_order",
+            "is_active",
+        ]
+        widgets = {
+            "session": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+            "exam_date": forms.DateInput(attrs={"class": BASE_INPUT_CLASS, "type": "date"}),
+            "title": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Contoh: IPA"}),
+            "item_type": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+            "start_time": forms.TimeInput(attrs={"class": BASE_INPUT_CLASS, "type": "time"}),
+            "end_time": forms.TimeInput(attrs={"class": BASE_INPUT_CLASS, "type": "time"}),
+            "description": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Contoh: Ruang 1"}),
+            "sort_order": forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 1}),
             "is_active": forms.CheckboxInput(attrs={"class": "mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900"}),
         }
 
@@ -59,6 +86,12 @@ class ExamPrintForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Nama pengawas"}),
     )
+    schedule_session = forms.ModelChoiceField(
+        queryset=ExamSession.objects.select_related("academic_year").order_by("-is_active", "-start_date", "name"),
+        label="Sesi jadwal",
+        required=False,
+        widget=forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -76,5 +109,7 @@ class ExamPrintForm(forms.Form):
         school_identity = SchoolIdentity.objects.first()
         if school_identity and not self.is_bound:
             self.fields["supervisor_name"].initial = school_identity.principal_name
+        if active_session and not self.is_bound:
+            self.fields["schedule_session"].initial = active_session.pk
         if not self.is_bound:
             self.fields["exam_date"].initial = timezone.localdate()
