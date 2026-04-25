@@ -219,6 +219,13 @@ class AcademicDetailViewTests(TestCase):
         self.assertEqual(cloned_group.notes, self.study_group.notes)
         self.assertTrue(cloned_group.is_active)
 
+    def test_year_list_disables_delete_action_when_year_still_has_study_groups(self):
+        response = self.client.get(reverse("academics:year_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'title="Tidak bisa dihapus karena masih memiliki rombel"')
+        self.assertContains(response, "Hapus")
+
 
 class SubjectApiTests(TestCase):
     def setUp(self):

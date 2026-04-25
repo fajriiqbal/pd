@@ -49,7 +49,11 @@
 
                 <div class="mt-4 flex flex-wrap gap-2">
                     <a href="{% url 'academics:year_edit' year.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50">Edit</a>
-                    <a href="{% url 'academics:year_delete' year.pk %}" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50">Hapus</a>
+                    {% if year.study_group_total == 0 %}
+                        <a href="{% url 'academics:year_delete' year.pk %}" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50">Hapus</a>
+                    {% else %}
+                        <span class="cursor-not-allowed rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-400" title="Tidak bisa dihapus karena masih memiliki rombel">Hapus</span>
+                    {% endif %}
                 </div>
 
                 <div class="mt-4 space-y-2">

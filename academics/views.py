@@ -676,7 +676,7 @@ def year_list(request):
                 "homeroom_teacher__user",
             ).prefetch_related("students__user"),
         )
-    )
+    ).annotate(study_group_total=Count("study_groups", distinct=True))
     context = {
         "years": years,
         "year_count": AcademicYear.objects.count(),
