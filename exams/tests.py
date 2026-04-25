@@ -142,6 +142,7 @@ class ExamMenuTests(TestCase):
             "day_count": 6,
             "sessions_per_day": 2,
             "exam_start_time": "07:30",
+            "exam_end_time": "12:00",
             "exam_duration_minutes": 90,
             "break_minutes": 30,
             "subjects_text": "IPA\nMatematika\nBahasa Indonesia",
@@ -169,3 +170,25 @@ class ExamMenuTests(TestCase):
             ExamScheduleItem.objects.filter(session=self.session, item_type=ExamScheduleItem.ItemType.BREAK).count(),
             6,
         )
+
+    def test_schedule_generate_supports_three_sessions_per_day_with_longer_window(self):
+        payload = {
+            "session": str(self.session.pk),
+            "start_date": "2026-11-10",
+            "day_count": 6,
+            "sessions_per_day": 3,
+            "exam_start_time": "07:30",
+            "exam_end_time": "13:00",
+            "exam_duration_minutes": 60,
+            "break_minutes": 30,
+            "subjects_text": "IPA\nMatematika\nBahasa Indonesia\nBahasa Inggris",
+            "action": "generate",
+        }
+        response = self.client.post(reverse("exams:schedule_generate"), payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Preview jadwal")
+        preview_rows = response.context["preview_rows"]
+        self.assertEqual(len(preview_rows), 30)
+        self.assertEqual(sum(1 for row in preview_rows if row["item_type"] == ExamScheduleItem.ItemType.EXAM), 18)
+        self.assertEqual(sum(1 for row in preview_rows if row["item_type"] == ExamScheduleItem.ItemType.BREAK), 12)

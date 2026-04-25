@@ -75,13 +75,18 @@ class ExamScheduleGenerateForm(forms.Form):
     sessions_per_day = forms.IntegerField(
         label="Mapel per hari",
         min_value=1,
-        max_value=4,
+        max_value=5,
         initial=2,
-        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 1, "max": 4}),
+        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 1, "max": 5}),
     )
     exam_start_time = forms.TimeField(
         label="Jam mulai",
         initial="07:30",
+        widget=forms.TimeInput(attrs={"class": BASE_INPUT_CLASS, "type": "time"}),
+    )
+    exam_end_time = forms.TimeField(
+        label="Jam selesai",
+        initial="12:00",
         widget=forms.TimeInput(attrs={"class": BASE_INPUT_CLASS, "type": "time"}),
     )
     exam_duration_minutes = forms.IntegerField(

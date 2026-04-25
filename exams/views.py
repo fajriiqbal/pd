@@ -88,12 +88,34 @@ def _parse_subject_lines(raw_text):
     return subjects
 
 
-def _build_schedule_preview(session, start_date, subjects, day_count, sessions_per_day, exam_start_time, exam_duration_minutes, break_minutes):
+def _max_sessions_for_window(exam_start_time, exam_end_time, exam_duration_minutes, break_minutes):
+    start_dt = datetime.combine(datetime.today(), exam_start_time)
+    end_dt = datetime.combine(datetime.today(), exam_end_time)
+    if end_dt <= start_dt:
+        return 0
+
+    slots = 0
+    cursor = start_dt
+    while True:
+        exam_end_dt = cursor + timedelta(minutes=exam_duration_minutes)
+        if exam_end_dt > end_dt:
+            break
+        slots += 1
+        cursor = exam_end_dt + timedelta(minutes=break_minutes)
+    return slots
+
+
+def _build_schedule_preview(session, start_date, subjects, day_count, sessions_per_day, exam_start_time, exam_end_time, exam_duration_minutes, break_minutes):
     rng = random.Random()
     pool = subjects[:]
     rng.shuffle(pool)
 
-    required_exam_slots = day_count * sessions_per_day
+    window_slots = _max_sessions_for_window(exam_start_time, exam_end_time, exam_duration_minutes, break_minutes)
+    effective_sessions_per_day = min(sessions_per_day, window_slots) if window_slots else 0
+    required_exam_slots = day_count * effective_sessions_per_day
+    if required_exam_slots <= 0:
+        return []
+
     generated_subjects = []
     while len(generated_subjects) < required_exam_slots:
         batch = subjects[:]
@@ -106,7 +128,7 @@ def _build_schedule_preview(session, start_date, subjects, day_count, sessions_p
     current_date = start_date
     for _day in range(day_count):
         current_dt = datetime.combine(current_date, exam_start_time)
-        for slot_index in range(sessions_per_day):
+        for slot_index in range(effective_sessions_per_day):
             subject_name = generated_subjects[subject_index]
             subject_index += 1
             end_dt = current_dt + timedelta(minutes=exam_duration_minutes)
@@ -123,7 +145,7 @@ def _build_schedule_preview(session, start_date, subjects, day_count, sessions_p
                 }
             )
             current_dt = end_dt
-            if slot_index < sessions_per_day - 1:
+            if slot_index < effective_sessions_per_day - 1:
                 break_end_dt = current_dt + timedelta(minutes=break_minutes)
                 rows.append(
                     {
@@ -133,7 +155,7 @@ def _build_schedule_preview(session, start_date, subjects, day_count, sessions_p
                         "end_time": break_end_dt.time().isoformat(timespec="minutes"),
                         "title": "Istirahat",
                         "item_type": ExamScheduleItem.ItemType.BREAK,
-                        "description": "Istirahat 30 menit",
+                        "description": f"Istirahat {break_minutes} menit",
                         "sort_order": len(rows) + 1,
                     }
                 )
@@ -388,6 +410,7 @@ def schedule_generate(request):
         day_count = form.cleaned_data["day_count"]
         sessions_per_day = form.cleaned_data["sessions_per_day"]
         exam_start_time = form.cleaned_data["exam_start_time"]
+        exam_end_time = form.cleaned_data["exam_end_time"]
         exam_duration_minutes = form.cleaned_data["exam_duration_minutes"]
         break_minutes = form.cleaned_data["break_minutes"]
         subjects = _parse_subject_lines(form.cleaned_data["subjects_text"])
@@ -401,19 +424,30 @@ def schedule_generate(request):
                 day_count,
                 sessions_per_day,
                 exam_start_time,
+                exam_end_time,
                 exam_duration_minutes,
                 break_minutes,
             )
-            generated_subjects = subjects
+            window_slots = _max_sessions_for_window(exam_start_time, exam_end_time, exam_duration_minutes, break_minutes)
+            if not window_slots:
+                form.add_error("exam_end_time", "Jam selesai harus lebih besar dari jam mulai dan cukup untuk menampung minimal satu mapel.")
+            else:
+                effective_sessions_per_day = min(sessions_per_day, window_slots)
+                if effective_sessions_per_day < sessions_per_day:
+                    messages.warning(
+                        request,
+                        f"Rentang jam hanya muat {effective_sessions_per_day} mapel per hari, jadi hasil generate disesuaikan otomatis.",
+                    )
+                generated_subjects = subjects
 
-            if request.POST.get("action") == "save":
-                saved_preview_rows = _load_preview_rows(request.POST.get("preview_payload"))
-                if not saved_preview_rows:
-                    form.add_error(None, "Preview jadwal tidak ditemukan. Silakan generate ulang dulu.")
-                else:
-                    _save_generated_schedule(selected_session, saved_preview_rows)
-                    messages.success(request, "Jadwal ujian otomatis berhasil disimpan.")
-                    return redirect(f"{reverse('exams:schedule_list')}?session={selected_session.pk}")
+                if request.POST.get("action") == "save":
+                    saved_preview_rows = _load_preview_rows(request.POST.get("preview_payload"))
+                    if not saved_preview_rows:
+                        form.add_error(None, "Preview jadwal tidak ditemukan. Silakan generate ulang dulu.")
+                    else:
+                        _save_generated_schedule(selected_session, saved_preview_rows)
+                        messages.success(request, "Jadwal ujian otomatis berhasil disimpan.")
+                        return redirect(f"{reverse('exams:schedule_list')}?session={selected_session.pk}")
 
     preview_json = json.dumps(preview_rows) if preview_rows else ""
     return render(

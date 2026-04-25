@@ -43,6 +43,11 @@
                     {% if form.exam_start_time.errors %}<p class="mt-1.5 text-sm text-rose-600">{{ form.exam_start_time.errors }}</p>{% endif %}
                 </div>
                 <div class="flex flex-col">
+                    <label for="{{ form.exam_end_time.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.exam_end_time.label }}</label>
+                    {{ form.exam_end_time }}
+                    {% if form.exam_end_time.errors %}<p class="mt-1.5 text-sm text-rose-600">{{ form.exam_end_time.errors }}</p>{% endif %}
+                </div>
+                <div class="flex flex-col">
                     <label for="{{ form.exam_duration_minutes.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.exam_duration_minutes.label }}</label>
                     {{ form.exam_duration_minutes }}
                     {% if form.exam_duration_minutes.errors %}<p class="mt-1.5 text-sm text-rose-600">{{ form.exam_duration_minutes.errors }}</p>{% endif %}
@@ -58,6 +63,7 @@
                 <label for="{{ form.subjects_text.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.subjects_text.label }}</label>
                 {{ form.subjects_text }}
                 {% if form.subjects_text.help_text %}<p class="mt-1.5 text-sm text-slate-500">{{ form.subjects_text.help_text }}</p>{% endif %}
+                <p class="mt-1.5 text-xs text-slate-500">Kalau jam selesai lebih panjang, mapel per hari bisa ditambah sampai 3 atau lebih, asalkan masih muat di rentang waktunya.</p>
                 {% if form.subjects_text.errors %}<p class="mt-1.5 text-sm text-rose-600">{{ form.subjects_text.errors }}</p>{% endif %}
             </div>
 
