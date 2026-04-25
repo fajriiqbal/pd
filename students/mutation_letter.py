@@ -7,8 +7,13 @@ from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.utils import timezone
 
-import qrcode
-from PIL import Image, ImageDraw
+try:
+    import qrcode
+    from PIL import Image, ImageDraw
+except ImportError:  # pragma: no cover - handled at runtime for operator-facing error messages
+    qrcode = None
+    Image = None
+    ImageDraw = None
 
 from teachers.utils import get_headmaster_teacher
 
@@ -165,6 +170,11 @@ def _draw_code39(x, y, width, height, value):
 
 
 def _build_qr_image_bytes(payload, logo_path=None):
+    if qrcode is None or Image is None or ImageDraw is None:
+        raise MutationLetterError(
+            "Fitur QR surat membutuhkan dependensi qrcode dan Pillow. Pastikan paket sudah terpasang di server."
+        )
+
     qr = qrcode.QRCode(
         version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
@@ -183,7 +193,8 @@ def _build_qr_image_bytes(payload, logo_path=None):
         if logo:
             qr_width, qr_height = image.size
             logo_size = max(20, qr_width // 4)
-            logo.thumbnail((logo_size, logo_size), Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS)
+            resampling = getattr(Image, "Resampling", Image)
+            logo.thumbnail((logo_size, logo_size), resampling.LANCZOS)
             logo_x = (qr_width - logo.width) // 2
             logo_y = (qr_height - logo.height) // 2
 
