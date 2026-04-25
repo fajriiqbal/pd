@@ -55,6 +55,71 @@ class ExamScheduleItemForm(forms.ModelForm):
         }
 
 
+class ExamScheduleGenerateForm(forms.Form):
+    session = forms.ModelChoiceField(
+        queryset=ExamSession.objects.select_related("academic_year").order_by("-is_active", "-start_date", "name"),
+        label="Sesi ujian",
+        widget=forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+    )
+    start_date = forms.DateField(
+        label="Tanggal mulai",
+        widget=forms.DateInput(attrs={"class": BASE_INPUT_CLASS, "type": "date"}),
+    )
+    day_count = forms.IntegerField(
+        label="Jumlah hari",
+        min_value=1,
+        max_value=14,
+        initial=6,
+        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 1, "max": 14}),
+    )
+    sessions_per_day = forms.IntegerField(
+        label="Mapel per hari",
+        min_value=1,
+        max_value=4,
+        initial=2,
+        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 1, "max": 4}),
+    )
+    exam_start_time = forms.TimeField(
+        label="Jam mulai",
+        initial="07:30",
+        widget=forms.TimeInput(attrs={"class": BASE_INPUT_CLASS, "type": "time"}),
+    )
+    exam_duration_minutes = forms.IntegerField(
+        label="Durasi mapel (menit)",
+        min_value=30,
+        max_value=240,
+        initial=90,
+        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 30, "max": 240}),
+    )
+    break_minutes = forms.IntegerField(
+        label="Istirahat (menit)",
+        min_value=5,
+        max_value=120,
+        initial=30,
+        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 5, "max": 120}),
+    )
+    subjects_text = forms.CharField(
+        label="Daftar mata pelajaran",
+        widget=forms.Textarea(
+            attrs={
+                "class": BASE_INPUT_CLASS,
+                "rows": 8,
+                "placeholder": "Tulis satu mapel per baris.\nContoh:\nIPA\nMatematika\nBahasa Indonesia\n...",
+            }
+        ),
+        help_text="Satu baris satu mata pelajaran. Sistem akan mengacak urutannya saat generate.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        active_session = ExamSession.objects.filter(is_active=True).select_related("academic_year").first()
+        if active_session and not self.is_bound:
+            self.fields["session"].initial = active_session.pk
+            self.fields["start_date"].initial = active_session.start_date
+        if not self.is_bound:
+            self.fields["subjects_text"].initial = "IPA\nMatematika\nBahasa Indonesia\nBahasa Inggris\nFiqih\nAkidah Akhlak\nSKI\nQur'an Hadis\nIPS\nPKN\nSeni Budaya\nPenjaskes"
+
+
 class ExamPrintForm(forms.Form):
     session = forms.ModelChoiceField(
         queryset=ExamSession.objects.select_related("academic_year").order_by("-is_active", "-start_date", "name"),

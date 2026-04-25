@@ -1,3 +1,5 @@
+import json
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -132,3 +134,38 @@ class ExamMenuTests(TestCase):
         self.assertContains(response, "Jadwal ujian")
         self.assertContains(response, "IPA")
         self.assertContains(response, "Istirahat")
+
+    def test_schedule_generate_can_preview_and_save_exact_result(self):
+        payload = {
+            "session": str(self.session.pk),
+            "start_date": "2026-11-10",
+            "day_count": 6,
+            "sessions_per_day": 2,
+            "exam_start_time": "07:30",
+            "exam_duration_minutes": 90,
+            "break_minutes": 30,
+            "subjects_text": "IPA\nMatematika\nBahasa Indonesia",
+            "action": "generate",
+        }
+        preview_response = self.client.post(reverse("exams:schedule_generate"), payload)
+
+        self.assertEqual(preview_response.status_code, 200)
+        self.assertContains(preview_response, "Preview jadwal")
+
+        preview_rows = preview_response.context["preview_rows"]
+        self.assertEqual(len(preview_rows), 18)
+        self.assertEqual(sum(1 for row in preview_rows if row["item_type"] == ExamScheduleItem.ItemType.BREAK), 6)
+
+        save_payload = dict(payload)
+        save_payload["action"] = "save"
+        save_payload["preview_payload"] = preview_response.context["preview_json"]
+
+        save_response = self.client.post(reverse("exams:schedule_generate"), save_payload, follow=True)
+
+        self.assertEqual(save_response.status_code, 200)
+        self.assertContains(save_response, "Jadwal ujian otomatis berhasil disimpan.")
+        self.assertEqual(ExamScheduleItem.objects.filter(session=self.session).count(), 18)
+        self.assertEqual(
+            ExamScheduleItem.objects.filter(session=self.session, item_type=ExamScheduleItem.ItemType.BREAK).count(),
+            6,
+        )

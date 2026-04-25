@@ -1,16 +1,22 @@
+import json
+import random
+from datetime import datetime, timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.urls import reverse
 
 from academics.models import StudyGroup
 from accounts.models import CustomUser
 from institution.models import SchoolIdentity
 from students.models import StudentProfile
 
-from .forms import ExamPrintForm, ExamScheduleItemForm, ExamSessionForm
+from .forms import ExamPrintForm, ExamScheduleGenerateForm, ExamScheduleItemForm, ExamSessionForm
 from .models import ExamScheduleItem, ExamSession
 
 
@@ -67,6 +73,126 @@ def _session_schedule(session):
 
 def _chunk_cards(cards, size=4):
     return [cards[index : index + size] for index in range(0, len(cards), size)]
+
+
+def _parse_subject_lines(raw_text):
+    return [line.strip(" -•\t") for line in (raw_text or "").splitlines() if line.strip()]
+
+
+def _parse_subject_lines(raw_text):
+    subjects = []
+    for line in (raw_text or "").splitlines():
+        cleaned = line.strip().lstrip("-•*").strip()
+        if cleaned:
+            subjects.append(cleaned)
+    return subjects
+
+
+def _build_schedule_preview(session, start_date, subjects, day_count, sessions_per_day, exam_start_time, exam_duration_minutes, break_minutes):
+    rng = random.Random()
+    pool = subjects[:]
+    rng.shuffle(pool)
+
+    required_exam_slots = day_count * sessions_per_day
+    generated_subjects = []
+    while len(generated_subjects) < required_exam_slots:
+        batch = subjects[:]
+        rng.shuffle(batch)
+        generated_subjects.extend(batch)
+    generated_subjects = generated_subjects[:required_exam_slots]
+
+    rows = []
+    subject_index = 0
+    current_date = start_date
+    for _day in range(day_count):
+        current_dt = datetime.combine(current_date, exam_start_time)
+        for slot_index in range(sessions_per_day):
+            subject_name = generated_subjects[subject_index]
+            subject_index += 1
+            end_dt = current_dt + timedelta(minutes=exam_duration_minutes)
+            rows.append(
+                {
+                    "session_id": session.pk,
+                    "exam_date": current_date.isoformat(),
+                    "start_time": current_dt.time().isoformat(timespec="minutes"),
+                    "end_time": end_dt.time().isoformat(timespec="minutes"),
+                    "title": subject_name,
+                    "item_type": ExamScheduleItem.ItemType.EXAM,
+                    "description": "",
+                    "sort_order": len(rows) + 1,
+                }
+            )
+            current_dt = end_dt
+            if slot_index < sessions_per_day - 1:
+                break_end_dt = current_dt + timedelta(minutes=break_minutes)
+                rows.append(
+                    {
+                        "session_id": session.pk,
+                        "exam_date": current_date.isoformat(),
+                        "start_time": current_dt.time().isoformat(timespec="minutes"),
+                        "end_time": break_end_dt.time().isoformat(timespec="minutes"),
+                        "title": "Istirahat",
+                        "item_type": ExamScheduleItem.ItemType.BREAK,
+                        "description": "Istirahat 30 menit",
+                        "sort_order": len(rows) + 1,
+                    }
+                )
+                current_dt = break_end_dt
+        current_date = current_date + timedelta(days=1)
+
+    return rows
+
+
+def _save_generated_schedule(session, preview_rows):
+    with transaction.atomic():
+        ExamScheduleItem.objects.filter(session=session).delete()
+        created = []
+        for row in preview_rows:
+            created.append(
+                ExamScheduleItem.objects.create(
+                    session=session,
+                    exam_date=row["exam_date"],
+                    start_time=row["start_time"],
+                    end_time=row["end_time"],
+                    title=row["title"],
+                    item_type=row["item_type"],
+                    description=row.get("description", ""),
+                    sort_order=row.get("sort_order", 1),
+                    is_active=True,
+                )
+                )
+    return created
+
+
+def _load_preview_rows(raw_payload):
+    if not raw_payload:
+        return []
+
+    try:
+        preview_rows = json.loads(raw_payload)
+    except json.JSONDecodeError:
+        return []
+
+    if not isinstance(preview_rows, list):
+        return []
+
+    normalized_rows = []
+    for row in preview_rows:
+        if not isinstance(row, dict):
+            continue
+        normalized_rows.append(
+            {
+                "session_id": row.get("session_id"),
+                "exam_date": row.get("exam_date"),
+                "start_time": row.get("start_time"),
+                "end_time": row.get("end_time"),
+                "title": row.get("title", ""),
+                "item_type": row.get("item_type", ExamScheduleItem.ItemType.EXAM),
+                "description": row.get("description", ""),
+                "sort_order": row.get("sort_order", 1),
+            }
+        )
+    return normalized_rows
 
 
 def _print_context(request, title, subtitle, extra=None):
@@ -245,6 +371,66 @@ def schedule_delete(request, pk):
             "item_type": "jadwal ujian",
             "cancel_url": "exams:schedule_list",
         },
+    )
+
+
+@login_required
+def schedule_generate(request):
+    _require_exam_admin(request)
+    form = ExamScheduleGenerateForm(request.POST or None)
+    preview_rows = []
+    selected_session = None
+    generated_subjects = []
+
+    if request.method == "POST" and form.is_valid():
+        selected_session = form.cleaned_data["session"]
+        start_date = form.cleaned_data["start_date"]
+        day_count = form.cleaned_data["day_count"]
+        sessions_per_day = form.cleaned_data["sessions_per_day"]
+        exam_start_time = form.cleaned_data["exam_start_time"]
+        exam_duration_minutes = form.cleaned_data["exam_duration_minutes"]
+        break_minutes = form.cleaned_data["break_minutes"]
+        subjects = _parse_subject_lines(form.cleaned_data["subjects_text"])
+        if not subjects:
+            form.add_error("subjects_text", "Minimal satu mata pelajaran harus diisi.")
+        else:
+            preview_rows = _build_schedule_preview(
+                selected_session,
+                start_date,
+                subjects,
+                day_count,
+                sessions_per_day,
+                exam_start_time,
+                exam_duration_minutes,
+                break_minutes,
+            )
+            generated_subjects = subjects
+
+            if request.POST.get("action") == "save":
+                saved_preview_rows = _load_preview_rows(request.POST.get("preview_payload"))
+                if not saved_preview_rows:
+                    form.add_error(None, "Preview jadwal tidak ditemukan. Silakan generate ulang dulu.")
+                else:
+                    _save_generated_schedule(selected_session, saved_preview_rows)
+                    messages.success(request, "Jadwal ujian otomatis berhasil disimpan.")
+                    return redirect(f"{reverse('exams:schedule_list')}?session={selected_session.pk}")
+
+    preview_json = json.dumps(preview_rows) if preview_rows else ""
+    return render(
+        request,
+        "exams/schedule_generate.html",
+        _print_context(
+            request,
+            "Generate Jadwal Ujian",
+            "Buat jadwal 6 hari secara otomatis, lalu ulangi generate sampai susunannya sesuai.",
+            {
+                "form": form,
+                "preview_rows": preview_rows,
+                "preview_json": preview_json,
+                "selected_session": selected_session,
+                "generated_subjects": generated_subjects,
+            },
+        ),
     )
 
 

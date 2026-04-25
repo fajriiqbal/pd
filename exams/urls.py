@@ -12,6 +12,7 @@ urlpatterns = [
     path("sessions/<int:pk>/delete/", views.session_delete, name="session_delete"),
     path("schedule/", views.schedule_list, name="schedule_list"),
     path("schedule/add/", views.schedule_create, name="schedule_add"),
+    path("schedule/generate/", views.schedule_generate, name="schedule_generate"),
     path("schedule/<int:pk>/edit/", views.schedule_update, name="schedule_edit"),
     path("schedule/<int:pk>/delete/", views.schedule_delete, name="schedule_delete"),
     path("cards/", views.print_cards, name="cards"),
