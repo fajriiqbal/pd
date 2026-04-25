@@ -9,6 +9,7 @@ from django.urls import reverse
 
 from academics.models import AcademicYear, SchoolClass, StudyGroup
 from accounts.models import ActivityLog, CustomUser
+from teachers.models import TeacherAdditionalTask, TeacherProfile
 
 from .import_utils import build_student_import_preview, execute_student_import
 from .models import (
@@ -169,6 +170,26 @@ class StudentListAndBulkDeleteTests(TestCase):
             academic_year=self.academic_year,
             school_class=self.school_class_8,
             name="8A",
+        )
+        headmaster_user = CustomUser.objects.create_user(
+            username="kamad",
+            password="rahasia123",
+            full_name="Kepala Madrasah",
+            role=CustomUser.Role.TEACHER,
+        )
+        self.headmaster = TeacherProfile.objects.create(
+            user=headmaster_user,
+            gender=TeacherProfile.Gender.MALE,
+            birth_place="Tulung",
+            birth_date="1980-01-01",
+            address="Alamat kepala madrasah",
+        )
+        TeacherAdditionalTask.objects.create(
+            teacher=self.headmaster,
+            name="Kepala Madrasah",
+            task_type=TeacherAdditionalTask.TaskType.LEADERSHIP,
+            description="Penanggung jawab utama madrasah",
+            is_active=True,
         )
         self.student_7a = self._create_student(
             username="siswa-7a",
@@ -407,6 +428,29 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertContains(response, "Riwayat kenaikan kelas 2025/2026 ke 2026/2027 berhasil dihapus.")
         self.assertFalse(PromotionRun.objects.filter(pk=promotion_run.pk).exists())
         self.assertFalse(PromotionRunItem.objects.filter(pk=item.pk).exists())
+
+    def test_outbound_mutation_generates_pdf_letter(self):
+        mutation = StudentMutationRecord.objects.create(
+            student=self.student_7a,
+            direction=StudentMutationRecord.Direction.OUTBOUND,
+            mutation_date="2026-04-23",
+            origin_school_name="MTs Asal",
+            origin_school_npsn="12345678",
+            destination_school_name="MTs Tujuan",
+            destination_school_npsn="87654321",
+            reason="Pindah domisili",
+            notes="Surat otomatis",
+            created_by=self.operator,
+        )
+
+        response = self.client.get(reverse("students:mutation_letter", args=[mutation.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("attachment; filename=", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF-"))
+        self.assertIn(b"SURAT MUTASI SISWA", response.content)
+        self.assertIn(b"Kepala Madrasah", response.content)
 
     def test_promotion_workflow_allows_same_year_graduation_for_terminal_class(self):
         school_class_9 = SchoolClass.objects.create(name="Kelas 9", level_order=9)

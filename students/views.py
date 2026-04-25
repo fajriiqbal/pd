@@ -18,6 +18,7 @@ from teachers.models import TeacherProfile
 from .backup_utils import build_backup_archive, restore_backup_archive
 from .forms import PromotionStartForm, StudentAlumniDocumentForm, StudentAlumniValidationForm
 from .forms import BackupRestoreUploadForm, StudentDocumentForm, StudentImportUploadForm, StudentMutationRecordForm, StudentRecordForm
+from .mutation_letter import MutationLetterError, build_student_mutation_letter_pdf
 from .import_utils import (
     build_student_import_preview,
     delete_import_preview,
@@ -484,6 +485,31 @@ def student_mutation_create(request):
             "checkbox_fields": [],
         },
     )
+
+
+@login_required
+def student_mutation_letter(request, pk):
+    mutation = get_object_or_404(
+        StudentMutationRecord.objects.select_related(
+            "student__user",
+            "origin_study_group__school_class",
+            "destination_study_group__school_class",
+        ),
+        pk=pk,
+    )
+    if mutation.direction != StudentMutationRecord.Direction.OUTBOUND:
+        messages.error(request, "Surat PDF hanya tersedia untuk mutasi keluar.")
+        return redirect("students:mutation_list")
+
+    try:
+        pdf_bytes, filename = build_student_mutation_letter_pdf(mutation)
+    except MutationLetterError as exc:
+        messages.error(request, str(exc))
+        return redirect("students:mutation_list")
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required
