@@ -560,13 +560,6 @@ def _selected_exam_data(request):
 def print_cards(request):
     _require_exam_admin(request)
     form, session, schedule_session, group, exam_date, room_name, supervisor_name, students, schedule_items = _selected_exam_data(request)
-    schedule_display_items = [item for item in schedule_items if item.item_type != ExamScheduleItem.ItemType.BREAK]
-    schedule_groups = []
-    for item in schedule_items:
-        if schedule_groups and schedule_groups[-1]["exam_date"] == item.exam_date:
-            schedule_groups[-1]["items"].append(item)
-        else:
-            schedule_groups.append({"exam_date": item.exam_date, "items": [item]})
     cards = [
         {
             "index": index + 1,
@@ -592,8 +585,7 @@ def print_cards(request):
                 "supervisor_name": supervisor_name,
                 "cards": cards,
                 "card_pages": _chunk_cards(cards, 4),
-                "schedule_items": schedule_display_items,
-                "schedule_groups": schedule_groups,
+                "schedule_items": schedule_items,
                 "print_requested": request.GET.get("print") == "1",
             },
         ),
