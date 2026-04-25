@@ -26,7 +26,7 @@
 
     .student-card {
         border-radius: 0;
-        padding: 9px 11px;
+        padding: 8px 10px;
         border: 1px solid #cbd5e1;
         break-inside: avoid;
         page-break-inside: avoid;
@@ -36,35 +36,35 @@
     .school-header {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding-bottom: 8px;
-        margin-bottom: 8px;
+        gap: 8px;
+        padding-bottom: 6px;
+        margin-bottom: 6px;
         border-bottom: 2px solid #0f172a;
     }
 
     .school-header .brand-mark {
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
     }
 
     .school-header .school-name {
         margin: 0;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 800;
         line-height: 1.2;
     }
 
     .school-header .school-address {
-        margin: 3px 0 0;
-        font-size: 9px;
+        margin: 2px 0 0;
+        font-size: 8px;
         color: #475569;
-        line-height: 1.35;
+        line-height: 1.3;
     }
 
     .card-center-note {
-        margin: 0 0 8px;
+        margin: 0 0 6px;
         text-align: center;
-        font-size: 9px;
+        font-size: 8px;
         font-weight: 800;
         letter-spacing: 0.16em;
         text-transform: uppercase;
@@ -74,7 +74,7 @@
     .student-card-body {
         display: grid;
         grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-        gap: 5mm;
+        gap: 4mm;
     }
 
     .student-identity,
@@ -82,13 +82,13 @@
         border: 1px solid #e2e8f0;
         border-radius: 0;
         background: white;
-        padding: 10px;
+        padding: 9px;
         min-width: 0;
     }
 
     .card-section-label {
-        margin: 0 0 6px;
-        font-size: 9px;
+        margin: 0 0 5px;
+        font-size: 8px;
         font-weight: 800;
         letter-spacing: 0.18em;
         text-transform: uppercase;
@@ -97,15 +97,15 @@
 
     .identity-grid {
         display: grid;
-        gap: 5px;
+        gap: 4px;
     }
 
     .identity-row {
         display: grid;
-        grid-template-columns: 54px 10px minmax(0, 1fr);
+        grid-template-columns: 48px 8px minmax(0, 1fr);
         align-items: start;
-        gap: 4px;
-        font-size: 9px;
+        gap: 3px;
+        font-size: 8px;
         color: #334155;
     }
 
@@ -124,44 +124,47 @@
         font-weight: 700;
     }
 
-    .schedule-list {
-        display: grid;
-        gap: 6px;
+    .schedule-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 8px;
     }
 
-    .schedule-item {
-        border-radius: 0;
-        background: #f8fafc;
+    .schedule-table th,
+    .schedule-table td {
         border: 1px solid #e2e8f0;
-        padding: 8px 10px;
-        font-size: 9px;
+        padding: 4px 5px;
+        vertical-align: top;
     }
 
-    .schedule-item.break {
+    .schedule-table th {
+        background: #f8fafc;
+        text-align: left;
+        font-size: 7px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    .schedule-table .break-row td {
         background: #fff7ed;
-        border-color: #fed7aa;
     }
 
-    .schedule-item .row {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-    }
-
-    .schedule-item .time {
-        font-weight: 800;
-        color: #0f172a;
+    .schedule-time {
         white-space: nowrap;
-    }
-
-    .schedule-item .title {
         font-weight: 700;
         color: #0f172a;
     }
 
-    .schedule-item .note {
-        margin-top: 3px;
+    .schedule-title {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .schedule-note {
+        margin-top: 2px;
         color: #64748b;
+        font-size: 7px;
     }
 
     @media print {
@@ -186,7 +189,7 @@
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Kartu ujian</p>
                 <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Satu halaman diisi 4 kartu</h2>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Setiap halaman ditata vertikal 4 kartu supaya pas untuk potong kartu di kertas F4.</p>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Setiap kartu dibuat vertikal supaya mudah dipotong dan kolom jadwalnya sama seperti tabel generate.</p>
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{% url 'exams:schedule_list' %}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Atur jadwal</a>
@@ -203,8 +206,8 @@
                         <div class="school-header">
                             <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
                             <div class="header-text">
-                                <h1 class="school-name">{{ request.school_identity.institution_name|default:"PDM" }}</h1>
-                                <p class="school-address">{{ request.school_identity.full_address|default:"Alamat madrasah" }}</p>
+                                <h1 class="school-name">{{ school_identity.institution_name|default:"PDM" }}</h1>
+                                <p class="school-address">{{ school_identity.full_address|default:"Alamat madrasah" }}</p>
                                 <p class="school-address">
                                     {% if selected_session %}{{ selected_session.name }} · {{ selected_session.academic_year.name }} · {{ selected_session.get_semester_display }}{% endif %}
                                 </p>
@@ -252,25 +255,36 @@
 
                             <div class="student-schedule">
                                 <p class="card-section-label">Jadwal Ujian</p>
-                                <div class="schedule-list">
-                                    {% for item in schedule_items %}
-                                        <div class="schedule-item {% if item.item_type == 'break' %}break{% endif %}">
-                                            <div class="row">
-                                                <span class="title">{{ item.title }}</span>
-                                                <span class="time">{{ item.start_time|time:"H:i" }} - {{ item.end_time|time:"H:i" }}</span>
-                                            </div>
-                                            <div class="note">
-                                                {{ item.exam_date|date:"D, d M Y" }}
-                                                {% if item.description %} · {{ item.description }}{% endif %}
-                                            </div>
-                                        </div>
-                                    {% empty %}
-                                        <div class="schedule-item">
-                                            <div class="title">Belum ada jadwal ujian</div>
-                                            <div class="note">Tambahkan jadwal pada menu Jadwal ujian terlebih dahulu.</div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
+                                <table class="schedule-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Waktu</th>
+                                            <th>Tanggal</th>
+                                            <th>Mata pelajaran</th>
+                                            <th>Paraf</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in schedule_items %}
+                                            <tr class="{% if item.item_type == 'break' %}break-row{% endif %}">
+                                                <td class="schedule-time">{{ item.start_time|time:"H:i" }} - {{ item.end_time|time:"H:i" }}</td>
+                                                <td>{{ item.exam_date|date:"d/m/Y" }}</td>
+                                                <td>
+                                                    <div class="schedule-title">{{ item.title }}</div>
+                                                    {% if item.description %}<div class="schedule-note">{{ item.description }}</div>{% endif %}
+                                                </td>
+                                                <td>................</td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="4">
+                                                    <div class="schedule-title">Belum ada jadwal ujian</div>
+                                                    <div class="schedule-note">Tambahkan jadwal pada menu Jadwal ujian terlebih dahulu.</div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </article>
