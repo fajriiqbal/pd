@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "accounts",
     "institution.apps.InstitutionConfig",
+    "exams.apps.ExamsConfig",
     "students",
     "teachers",
     "dashboard",

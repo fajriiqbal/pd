@@ -14,6 +14,7 @@ urlpatterns = [
     path("auth/login/", SchoolLoginView.as_view(), name="login"),
     path("auth/", include("django.contrib.auth.urls")),
     path("institution/", include("institution.urls")),
+    path("exams/", include("exams.urls")),
     path("api/", include("academics.api_urls")),
     path("", include("dashboard.urls")),
     path("academics/", include("academics.urls")),

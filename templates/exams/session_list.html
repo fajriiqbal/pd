@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Sesi Ujian | PDM{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Sesi ujian</p>
+            <h2 class="mt-2 text-2xl font-black tracking-tight text-slate-950">Kelola sesi ujian yang dipakai saat mencetak dokumen</h2>
+            <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-500">Gunakan satu sesi aktif agar kartu, absensi, BAP, dan label ruang selalu konsisten.</p>
+        </div>
+        <a href="{% url 'exams:session_add' %}" class="inline-flex rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800">Tambah sesi</a>
+    </div>
+
+    <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100 text-sm">
+                <thead>
+                    <tr class="text-left text-slate-500">
+                        <th class="px-4 py-3">Nama</th>
+                        <th class="px-4 py-3">Tahun ajaran</th>
+                        <th class="px-4 py-3">Semester</th>
+                        <th class="px-4 py-3">Periode</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for session in sessions %}
+                        <tr>
+                            <td class="px-4 py-4 font-medium text-slate-950">{{ session.name }}</td>
+                            <td class="px-4 py-4 text-slate-600">{{ session.academic_year.name }}</td>
+                            <td class="px-4 py-4 text-slate-600">{{ session.get_semester_display }}</td>
+                            <td class="px-4 py-4 text-slate-600">{{ session.start_date|date:"d M Y" }} - {{ session.end_date|date:"d M Y" }}</td>
+                            <td class="px-4 py-4">
+                                {% if session.is_active %}
+                                    <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Aktif</span>
+                                {% else %}
+                                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Nonaktif</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="flex flex-wrap gap-2">
+                                    <a href="{% url 'exams:session_edit' session.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Edit</a>
+                                    <a href="{% url 'exams:session_delete' session.pk %}" class="rounded-full border border-rose-300 px-3 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-50">Hapus</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-slate-500">Belum ada sesi ujian.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}
+

@@ -1,0 +1,274 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ujian | PDM{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <style>
+        :root {
+            --paper-width: 210mm;
+            --paper-min-height: 297mm;
+        }
+        html, body {
+            background: #f5f5f7;
+            margin: 0;
+            color: #0f172a;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .print-shell {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: end;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .toolbar-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            width: 100%;
+        }
+        .toolbar-grid .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .toolbar-grid label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+        }
+        .toolbar-grid select,
+        .toolbar-grid input {
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 14px;
+            background: white;
+        }
+        .toolbar-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .action-btn {
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 700;
+            border: 1px solid #cbd5e1;
+            background: white;
+            color: #0f172a;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .action-btn.primary {
+            background: #0f172a;
+            color: white;
+            border-color: #0f172a;
+        }
+        .paper {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            box-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.22);
+            padding: 20px;
+        }
+        .print-paper {
+            width: var(--paper-width);
+            min-height: var(--paper-min-height);
+            margin: 0 auto;
+            background: white;
+            color: #111827;
+        }
+        .print-header {
+            border-bottom: 3px solid #0f172a;
+            padding-bottom: 14px;
+            margin-bottom: 18px;
+        }
+        .brand-line {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+        .brand-mark {
+            width: 58px;
+            height: 58px;
+            object-fit: contain;
+        }
+        .paper-title {
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.2;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+        }
+        .paper-subtitle {
+            margin: 3px 0 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .paper-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #475569;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .exam-card {
+            border: 1px solid #cbd5e1;
+            border-radius: 18px;
+            padding: 16px;
+            break-inside: avoid;
+        }
+        .signature-line {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .signature-box {
+            width: 48%;
+            text-align: center;
+        }
+        .signature-space {
+            height: 78px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th,
+        .table td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 10px;
+            font-size: 12px;
+            vertical-align: top;
+        }
+        .table th {
+            background: #f8fafc;
+            text-align: left;
+        }
+        .page-break {
+            break-after: page;
+            page-break-after: always;
+        }
+        .room-label {
+            text-align: center;
+            border: 3px solid #0f172a;
+            padding: 36px 24px;
+            border-radius: 24px;
+        }
+        .room-label .room-name {
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            margin: 12px 0;
+        }
+        .room-label .session-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .room-label .room-note {
+            font-size: 14px;
+            color: #475569;
+        }
+        @media print {
+            body {
+                background: white;
+            }
+            .print-shell {
+                padding: 0;
+            }
+            .toolbar {
+                display: none !important;
+            }
+            .paper {
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+                padding: 0;
+            }
+            .print-paper {
+                width: auto;
+                min-height: auto;
+            }
+        }
+        @media (max-width: 900px) {
+            .toolbar-grid,
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            .signature-line {
+                flex-direction: column;
+            }
+            .signature-box {
+                width: 100%;
+            }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="print-shell">
+        <div class="toolbar paper">
+            <form method="get" class="w-full">
+                <div class="toolbar-grid">
+                    <div class="field">
+                        <label for="{{ form.session.id_for_label }}">{{ form.session.label }}</label>
+                        {{ form.session }}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.study_group.id_for_label }}">{{ form.study_group.label }}</label>
+                        {{ form.study_group }}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.exam_date.id_for_label }}">{{ form.exam_date.label }}</label>
+                        {{ form.exam_date }}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.room_name.id_for_label }}">{{ form.room_name.label }}</label>
+                        {{ form.room_name }}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.supervisor_name.id_for_label }}">{{ form.supervisor_name.label }}</label>
+                        {{ form.supervisor_name }}
+                    </div>
+                </div>
+                <div class="toolbar-actions">
+                    <button type="submit" class="action-btn">Tampilkan</button>
+                    <button type="submit" name="print" value="1" class="action-btn primary">Cetak</button>
+                    <a href="{% url 'exams:overview' %}" class="action-btn">Kembali</a>
+                </div>
+            </form>
+        </div>
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        {% if print_requested %}
+        window.addEventListener("load", () => window.print());
+        {% endif %}
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+

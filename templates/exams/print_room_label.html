@@ -1,0 +1,24 @@
+{% extends "exams/print_layout.html" %}
+
+{% block title %}Cetak Label Ruang | PDM{% endblock %}
+
+{% block content %}
+<section class="paper print-paper">
+    <div class="room-label">
+        <p class="paper-subtitle">{{ request.school_identity.institution_name|default:"PDM" }}</p>
+        <h1 class="room-name">{{ room_name|default:"RUANG UJIAN" }}</h1>
+        <p class="session-name">{% if selected_session %}{{ selected_session.name }}{% else %}Sesi Ujian{% endif %}</p>
+        <p class="room-note mt-4">
+            {% if selected_group %}
+                {{ selected_group.school_class.name }} - {{ selected_group.name }}
+            {% else %}
+                Pilih sesi dan rombel untuk menampilkan label ruang yang sesuai.
+            {% endif %}
+        </p>
+        <div class="mt-8 rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500">
+            Tempelkan di pintu atau meja ruang agar peserta dan pengawas mudah mengenali lokasi ujian.
+        </div>
+    </div>
+</section>
+{% endblock %}
+

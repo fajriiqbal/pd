@@ -105,6 +105,19 @@
                                         <a href="{% url 'teachers:additional_tasks' %}" class="{% if '/teachers/additional-tasks/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Tugas tambahan</a>
                                     </div>
                                 </details>
+                                <details class="rounded-[24px] {% if '/exams/' in request.path %}bg-white/55{% endif %} p-1" {% if '/exams/' in request.path %}open{% endif %}>
+                                    <summary class="cursor-pointer list-none rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 transition hover:text-slate-900">
+                                        Ujian
+                                    </summary>
+                                    <div class="space-y-1 px-2 pb-2">
+                                        <a href="{% url 'exams:overview' %}" class="{% if request.path == '/exams/' %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Dashboard ujian</a>
+                                        <a href="{% url 'exams:session_list' %}" class="{% if '/exams/sessions/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Sesi ujian</a>
+                                        <a href="{% url 'exams:cards' %}" class="{% if '/exams/cards/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Kartu ujian</a>
+                                        <a href="{% url 'exams:attendance' %}" class="{% if '/exams/attendance/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Daftar hadir</a>
+                                        <a href="{% url 'exams:bap' %}" class="{% if '/exams/bap/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">BAP</a>
+                                        <a href="{% url 'exams:room_label' %}" class="{% if '/exams/room-label/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Label ruang</a>
+                                    </div>
+                                </details>
                                 <a href="{% url 'accounts:list' %}" class="{% if '/accounts/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-700 hover:bg-white/70 hover:text-slate-900{% endif %} block rounded-2xl px-4 py-3 text-sm font-medium transition">
                                     Akun Pengguna
                                 </a>

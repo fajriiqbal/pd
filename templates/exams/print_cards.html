@@ -1,0 +1,51 @@
+{% extends "exams/print_layout.html" %}
+
+{% block title %}Cetak Kartu Ujian | PDM{% endblock %}
+
+{% block content %}
+<section class="paper print-paper">
+    <div class="print-header">
+        <div class="brand-line">
+            <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
+            <div>
+                <h1 class="paper-title">{{ request.school_identity.institution_name|default:"PDM" }}</h1>
+                <p class="paper-subtitle">{{ request.school_identity.full_address|default:"Alamat madrasah" }}</p>
+                <p class="paper-subtitle">
+                    {% if selected_session %}{{ selected_session.name }} · {{ selected_session.academic_year.name }} · {{ selected_session.get_semester_display }}{% else %}Pilih sesi ujian{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {% if selected_group %}
+        <div class="paper-meta">
+            <div><strong>Rombel:</strong> {{ selected_group.school_class.name }} - {{ selected_group.name }}</div>
+            <div><strong>Tanggal cetak:</strong> {{ exam_date|date:"d M Y" }}</div>
+        </div>
+    {% endif %}
+
+    <div class="mt-5 card-grid">
+        {% for card in cards %}
+            <article class="exam-card">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Kartu Ujian</p>
+                <h2 class="mt-2 text-xl font-bold text-slate-950">{{ card.student.user.full_name }}</h2>
+                <div class="mt-4 space-y-2 text-sm text-slate-700">
+                    <p><strong>NIS:</strong> {{ card.student.nis|default:"-" }}</p>
+                    <p><strong>NISN:</strong> {{ card.student.nisn|default:"-" }}</p>
+                    <p><strong>Kelas/Rombel:</strong> {{ card.student.study_group.school_class.name }} - {{ card.student.study_group.name }}</p>
+                    <p><strong>No. Peserta:</strong> {{ card.participant_number }}</p>
+                    <p><strong>Sesi:</strong> {{ selected_session.name }}</p>
+                </div>
+                <div class="mt-4 rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-xs text-slate-500">
+                    Kartu ini digunakan untuk identitas peserta saat ujian. Simpan dan bawa saat pelaksanaan.
+                </div>
+            </article>
+        {% empty %}
+            <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500">
+                Pilih sesi ujian dan rombel terlebih dahulu untuk menampilkan kartu peserta.
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+

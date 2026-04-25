@@ -1,0 +1,66 @@
+{% extends "exams/print_layout.html" %}
+
+{% block title %}Cetak Daftar Hadir | PDM{% endblock %}
+
+{% block content %}
+<section class="paper print-paper">
+    <div class="print-header">
+        <div class="brand-line">
+            <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
+            <div>
+                <h1 class="paper-title">DAFTAR HADIR UJIAN</h1>
+                <p class="paper-subtitle">{{ request.school_identity.institution_name|default:"PDM" }}</p>
+                <p class="paper-subtitle">
+                    {% if selected_session %}{{ selected_session.name }} · {{ selected_session.academic_year.name }} · {{ selected_session.get_semester_display }}{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="paper-meta">
+        <div><strong>Rombel:</strong> {% if selected_group %}{{ selected_group.school_class.name }} - {{ selected_group.name }}{% else %}-{% endif %}</div>
+        <div><strong>Ruang:</strong> {{ room_name|default:"-" }}</div>
+        <div><strong>Tanggal:</strong> {{ exam_date|date:"d M Y" }}</div>
+    </div>
+
+    <table class="table mt-5">
+        <thead>
+            <tr>
+                <th style="width: 28px;">No</th>
+                <th>Nama peserta</th>
+                <th style="width: 90px;">NIS</th>
+                <th style="width: 100px;">NISN</th>
+                <th style="width: 160px;">Tanda tangan</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ student.user.full_name }}</td>
+                    <td>{{ student.nis|default:"-" }}</td>
+                    <td>{{ student.nisn|default:"-" }}</td>
+                    <td style="height: 34px;"></td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-slate-500">Pilih sesi ujian dan rombel untuk menampilkan daftar hadir.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="signature-line">
+        <div class="signature-box">
+            <p class="text-sm text-slate-600">Pengawas</p>
+            <div class="signature-space"></div>
+            <p class="text-sm font-semibold text-slate-950">{{ supervisor_name|default:"-" }}</p>
+        </div>
+        <div class="signature-box">
+            <p class="text-sm text-slate-600">Kepala Madrasah</p>
+            <div class="signature-space"></div>
+            <p class="text-sm font-semibold text-slate-950">{{ request.school_identity.principal_name|default:"-" }}</p>
+        </div>
+    </div>
+</section>
+{% endblock %}
