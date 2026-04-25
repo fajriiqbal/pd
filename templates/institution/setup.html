@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Identitas Madrasah | PDM{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-5xl space-y-6">
+    <div class="rounded-[32px] border border-emerald-100 bg-[linear-gradient(135deg,#ecfdf5,#f8fafc_55%,#fefce8)] p-6 shadow-soft">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div class="max-w-2xl">
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Setup awal</p>
+                <h2 class="mt-2 text-3xl font-black tracking-tight text-slate-950">Satu kali isi, lalu semua surat dan data ikut kuat</h2>
+                <p class="mt-3 text-sm leading-7 text-slate-600">
+                    Form ini dipakai untuk menyimpan identitas resmi madrasah. Setelah data ini lengkap, aplikasi bisa dipakai untuk membuat surat, kop, dan informasi lembaga yang konsisten di seluruh modul.
+                </p>
+            </div>
+            <div class="rounded-3xl border border-white/80 bg-white/80 p-5 shadow-soft">
+                <p class="text-sm text-slate-500">Status</p>
+                <p class="mt-2 text-lg font-semibold text-slate-950">
+                    {% if identity and identity.is_complete %}
+                        Sudah tersimpan, silakan perbarui bila perlu
+                    {% else %}
+                        Wajib diisi sebelum memakai aplikasi
+                    {% endif %}
+                </p>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Data ini akan dipakai sebagai sumber utama identitas madrasah.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <section class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+            {% if form.non_field_errors %}
+                <div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div class="md:col-span-2 rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Identitas inti</h3>
+                        <div class="mt-4 grid gap-4 md:grid-cols-2">
+                            <div class="md:col-span-2">
+                                <label for="{{ form.institution_name.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.institution_name.label }}</label>
+                                {{ form.institution_name }}
+                                {% if form.institution_name.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.institution_name.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.npsn.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.npsn.label }}</label>
+                                {{ form.npsn }}
+                                {% if form.npsn.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.npsn.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.nsm.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.nsm.label }}</label>
+                                {{ form.nsm }}
+                                {% if form.nsm.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.nsm.errors }}</p>{% endif %}
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="{{ form.legal_name.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.legal_name.label }}</label>
+                                {{ form.legal_name }}
+                                {% if form.legal_name.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.legal_name.errors }}</p>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Alamat madrasah</h3>
+                        <div class="mt-4 grid gap-4 md:grid-cols-2">
+                            <div class="md:col-span-2">
+                                <label for="{{ form.address.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.address.label }}</label>
+                                {{ form.address }}
+                                {% if form.address.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.address.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.village.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.village.label }}</label>
+                                {{ form.village }}
+                                {% if form.village.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.village.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.district.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.district.label }}</label>
+                                {{ form.district }}
+                                {% if form.district.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.district.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.regency.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.regency.label }}</label>
+                                {{ form.regency }}
+                                {% if form.regency.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.regency.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.province.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.province.label }}</label>
+                                {{ form.province }}
+                                {% if form.province.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.province.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.postal_code.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.postal_code.label }}</label>
+                                {{ form.postal_code }}
+                                {% if form.postal_code.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.postal_code.errors }}</p>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Kontak</h3>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="{{ form.phone_number.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.phone_number.label }}</label>
+                                {{ form.phone_number }}
+                                {% if form.phone_number.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.phone_number.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.email.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.email.label }}</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.email.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.website.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.website.label }}</label>
+                                {{ form.website }}
+                                {% if form.website.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.website.errors }}</p>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Penanggung jawab</h3>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="{{ form.principal_name.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.principal_name.label }}</label>
+                                {{ form.principal_name }}
+                                {% if form.principal_name.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.principal_name.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.principal_nip.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.principal_nip.label }}</label>
+                                {{ form.principal_nip }}
+                                {% if form.principal_nip.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.principal_nip.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.operator_name.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.operator_name.label }}</label>
+                                {{ form.operator_name }}
+                                {% if form.operator_name.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.operator_name.errors }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.operator_phone.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.operator_phone.label }}</label>
+                                {{ form.operator_phone }}
+                                {% if form.operator_phone.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.operator_phone.errors }}</p>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Catatan surat</h3>
+                        <div class="mt-4">
+                            <label for="{{ form.letter_footer.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.letter_footer.label }}</label>
+                            {{ form.letter_footer }}
+                            {% if form.letter_footer.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.letter_footer.errors }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,_#1f9d55,_#157347)] px-5 py-2.5 text-sm font-medium text-white shadow-[0_12px_26px_-16px_rgba(21,115,71,0.75)] transition duration-200 hover:brightness-[1.03]">
+                        {{ submit_label|default:"Simpan identitas" }}
+                    </button>
+                    {% if identity and identity.is_complete %}
+                        <a href="{% url cancel_url %}" class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-2.5 text-center text-sm font-medium text-slate-600 transition duration-200 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900">
+                            Kembali ke dashboard
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </section>
+
+        <aside class="space-y-6">
+            <div class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Kenapa wajib?</p>
+                <ul class="mt-4 space-y-3 text-sm leading-7 text-slate-600">
+                    <li>Kop surat butuh nama resmi, alamat, dan penanggung jawab yang konsisten.</li>
+                    <li>Data lembaga memudahkan pembuatan dokumen seperti surat keluar, berita acara, dan arsip internal.</li>
+                    <li>Identitas ini menjadi sumber utama untuk modul lain agar tidak ada data yang berbeda-beda.</li>
+                </ul>
+            </div>
+
+            <div class="rounded-[32px] border border-white/80 bg-white p-6 shadow-soft">
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Catatan cepat</p>
+                <p class="mt-4 text-sm leading-7 text-slate-600">
+                    Kalau data sudah pernah diisi, halaman ini bisa dipakai lagi untuk memperbarui identitas bila ada perubahan NPSN, alamat, kepala madrasah, atau operator.
+                </p>
+            </div>
+        </aside>
+    </div>
+</section>
+{% endblock %}
+
