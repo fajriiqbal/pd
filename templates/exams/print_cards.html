@@ -34,10 +34,7 @@
         border-radius: 0;
     }
 
-    .student-schedule {
-        background: white;
-    }
-
+    .student-schedule,
     .student-identity {
         background: white;
     }
@@ -91,6 +88,52 @@
     @media (max-width: 900px) {
         .card-grid {
             grid-template-columns: 1fr;
+        }
+    }
+
+    @media print {
+        .card-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10mm;
+        }
+
+        .student-card {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .student-card-body {
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) !important;
+            gap: 8mm;
+        }
+
+        .student-identity,
+        .student-schedule {
+            min-width: 0;
+        }
+
+        .student-schedule {
+            align-self: start;
+        }
+
+        .school-header {
+            gap: 10px;
+        }
+
+        .school-header .brand-mark {
+            width: 42px;
+            height: 42px;
+        }
+
+        .school-header .school-name {
+            font-size: 14px;
+        }
+
+        .school-header .school-address,
+        .identity-row,
+        .schedule-item,
+        .schedule-item .note {
+            font-size: 10px;
         }
     }
 </style>
