@@ -713,10 +713,10 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
     # Body
     body_top = page_height - 186
     lines.append(text(60, body_top, "Yang bertanda tangan di bawah ini:", size=10.2, bold=True))
-    lines.append(text(60, body_top - 16, f"Nama pejabat : {headmaster.teacher_name}", size=10))
-    lines.append(text(60, body_top - 30, f"Jabatan      : {headmaster.task_name}", size=10))
-    lines.append(text(60, body_top - 44, f"NIP          : {headmaster.nip or '-'}", size=10))
-    lines.append(text(60, body_top - 62, "Menerangkan bahwa siswa tersebut di bawah ini:", size=10.2, bold=True))
+    lines.append(text(60, body_top - 18, f"Nama pejabat    : {headmaster.teacher_name}", size=10))
+    lines.append(text(60, body_top - 32, f"Jabatan         : {headmaster.task_name}", size=10))
+    lines.append(text(60, body_top - 46, f"NIP             : {headmaster.nip or '-'}", size=10))
+    lines.append(text(60, body_top - 66, "Menerangkan bahwa siswa tersebut di bawah ini:", size=10.2, bold=True))
 
     student_lines = [
         ("Nama siswa", mutation.student.user.full_name),
@@ -734,7 +734,7 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
     ]
     label_x = 60
     value_x = 175
-    current_y = body_top - 82
+    current_y = body_top - 86
     for label, value in student_lines:
         wrapped = _wrap_text(str(value), limit=54)
         lines.append(text(label_x, current_y, f"{label}", size=10, bold=True))
