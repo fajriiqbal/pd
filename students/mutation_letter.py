@@ -622,10 +622,13 @@ def _build_code(mutation):
 def _build_content(mutation, headmaster, verification_code, issue_date, logo_exists, qr_matrix):
     lines = []
     page_height = A4_HEIGHT
+    page_width = A4_WIDTH
 
     def text(x, y, value, size=11, bold=False, align="left"):
         font = "/F2" if bold else "/F1"
         escaped = _pdf_text(value)
+        if align == "center":
+            x = x - (len(str(value)) * size * 0.17)
         return f"BT {font} {size} Tf 1 0 0 1 {x:.2f} {y:.2f} Tm {escaped.decode('latin-1')} Tj ET".encode("latin-1")
 
     def centered(x_center, y, value, size=11, bold=False):
@@ -636,36 +639,36 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
 
     if logo_exists:
         lines.append(b"q")
-        lines.append(f"66 0 0 66 44 {page_height - 96:.2f} cm /Logo Do Q".encode("ascii"))
+        lines.append(f"60 0 0 60 44 {page_height - 92:.2f} cm /Logo Do Q".encode("ascii"))
 
     # Header
-    lines.append(centered(297.64, page_height - 46, SCHOOL_NAME, size=18, bold=True))
-    lines.append(centered(297.64, page_height - 67, f"{SCHOOL_LOCATION}", size=14, bold=True))
-    lines.append(centered(297.64, page_height - 83, "Jalan sesuai data madrasah", size=8))
-    lines.append(centered(297.64, page_height - 95, "Email / Telp: sesuai data madrasah", size=8))
+    lines.append(text(118, page_height - 44, SCHOOL_NAME, size=16, bold=True))
+    lines.append(text(118, page_height - 62, f"{SCHOOL_LOCATION}", size=13, bold=True))
+    lines.append(text(118, page_height - 78, "Jalan sesuai data madrasah", size=8))
+    lines.append(text(118, page_height - 90, "Email / Telp: sesuai data madrasah", size=8))
     lines.append(line(44, page_height - 108, 551, page_height - 108, width=1))
 
     # Title
-    lines.append(centered(297.64, page_height - 144, "SURAT MUTASI SISWA", size=15, bold=True))
-    lines.append(centered(297.64, page_height - 162, f"Nomor: {verification_code}", size=10))
+    lines.append(centered(page_width / 2, page_height - 142, "SURAT MUTASI SISWA", size=15, bold=True))
+    lines.append(centered(page_width / 2, page_height - 160, f"Nomor: {verification_code}", size=10))
 
     # Main body box
     box_left = 44
-    box_top = page_height - 188
+    box_top = page_height - 184
     box_right = 551
-    box_bottom = 292
-    lines.append(f"0.92 g {box_left:.2f} {box_bottom:.2f} {box_right - box_left:.2f} {box_top - box_bottom:.2f} re f".encode("ascii"))
+    box_bottom = 300
+    lines.append(f"1 1 1 rg {box_left:.2f} {box_bottom:.2f} {box_right - box_left:.2f} {box_top - box_bottom:.2f} re f".encode("ascii"))
     lines.append(line(box_left, box_bottom, box_right, box_bottom, width=0.8))
     lines.append(line(box_left, box_top, box_right, box_top, width=0.8))
     lines.append(line(box_left, box_bottom, box_left, box_top, width=0.8))
     lines.append(line(box_right, box_bottom, box_right, box_top, width=0.8))
 
-    intro_y = box_top - 26
+    intro_y = box_top - 24
     lines.append(text(60, intro_y, "Yang bertanda tangan di bawah ini:", size=10, bold=True))
-    lines.append(text(60, intro_y - 18, f"Nama pejabat  : {headmaster.teacher_name}", size=10))
-    lines.append(text(60, intro_y - 34, f"Jabatan       : {headmaster.task_name}", size=10))
-    lines.append(text(60, intro_y - 50, f"NIP           : {headmaster.nip or '-'}", size=10))
-    lines.append(text(60, intro_y - 70, "Menerangkan dengan sebenarnya bahwa:", size=10))
+    lines.append(text(60, intro_y - 18, f"Nama pejabat : {headmaster.teacher_name}", size=10))
+    lines.append(text(60, intro_y - 32, f"Jabatan      : {headmaster.task_name}", size=10))
+    lines.append(text(60, intro_y - 46, f"NIP          : {headmaster.nip or '-'}", size=10))
+    lines.append(text(60, intro_y - 64, "Menerangkan bahwa:", size=10, bold=True))
 
     student_lines = [
         ("Nama siswa", mutation.student.user.full_name),
@@ -682,8 +685,8 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
         ("Tanggal mutasi", _id_text(mutation.mutation_date)),
     ]
     label_x = 60
-    value_x = 170
-    current_y = intro_y - 88
+    value_x = 175
+    current_y = intro_y - 80
     for label, value in student_lines:
         lines.append(text(label_x, current_y, f"{label}", size=10, bold=True))
         for part_index, part in enumerate(_wrap_text(str(value), limit=54)):
@@ -691,37 +694,38 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
             current_y -= 14
         current_y -= 2
 
-    closing_y = current_y - 6
-    lines.append(text(60, closing_y, "Surat ini dibuat berdasarkan data mutasi pada sistem madrasah.", size=10))
-    lines.append(text(60, closing_y - 14, "Gunakan QR code di bawah sebagai verifikasi keaslian surat.", size=10))
+    closing_y = max(current_y - 4, 334)
+    lines.append(text(60, closing_y, "Surat ini dibuat berdasarkan data mutasi pada sistem madrasah.", size=9.5))
+    lines.append(text(60, closing_y - 14, "Gunakan QR code di bawah sebagai verifikasi keaslian surat.", size=9.5))
 
     # Signature block
-    sig_left = 344
+    sig_left = 352
     sig_right = 548
-    sig_top = 262
-    qr_size = 84
+    sig_top = 258
+    qr_size = 60
     qr_left = sig_left + ((sig_right - sig_left) - qr_size) / 2
-    qr_bottom = 144
+    qr_bottom = 168
 
     lines.append(text(sig_left, sig_top, f"Tulung, {_id_text(issue_date)}", size=10))
     lines.append(text(sig_left, sig_top - 16, "Kepala Madrasah", size=10))
+    lines.append(text(sig_left, sig_top - 30, " ", size=10))
 
     # QR with centered logo
-    white_pad = 6
+    white_pad = 4
     lines.append(f"1 1 1 rg {qr_left - white_pad:.2f} {qr_bottom - white_pad:.2f} {qr_size + white_pad * 2:.2f} {qr_size + white_pad * 2:.2f} re f".encode("ascii"))
     lines.append(_draw_qr_matrix(qr_left, qr_bottom, qr_size, qr_matrix))
 
     if logo_exists:
-        logo_box = 26
+        logo_box = 16
         logo_left = qr_left + (qr_size - logo_box) / 2
         logo_bottom = qr_bottom + (qr_size - logo_box) / 2
-        lines.append(f"1 1 1 rg {logo_left - 2:.2f} {logo_bottom - 2:.2f} {logo_box + 4:.2f} {logo_box + 4:.2f} re f".encode("ascii"))
+        lines.append(f"1 1 1 rg {logo_left - 1.5:.2f} {logo_bottom - 1.5:.2f} {logo_box + 3:.2f} {logo_box + 3:.2f} re f".encode("ascii"))
         lines.append(b"q")
         lines.append(f"{logo_box:.2f} 0 0 {logo_box:.2f} {logo_left:.2f} {logo_bottom:.2f} cm /Logo Do Q".encode("ascii"))
 
-    lines.append(text(sig_left, 126, headmaster.teacher_name, size=11, bold=True))
-    lines.append(text(sig_left, 110, f"NIP. {headmaster.nip or '-'}", size=10))
-    lines.append(text(sig_left, 96, f"Kode verifikasi: {verification_code}", size=8))
+    lines.append(text(sig_left, 144, headmaster.teacher_name, size=11, bold=True))
+    lines.append(text(sig_left, 128, f"NIP. {headmaster.nip or '-'}", size=10))
+    lines.append(text(sig_left, 112, f"Kode verifikasi: {verification_code}", size=8))
 
     return b"\n".join(lines)
 
