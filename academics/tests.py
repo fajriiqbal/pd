@@ -223,6 +223,7 @@ class AcademicDetailViewTests(TestCase):
         response = self.client.get(reverse("academics:year_list"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("academics:year_delete", args=[self.academic_year.pk]))
         self.assertContains(response, 'title="Tidak bisa dihapus karena masih memiliki rombel"')
         self.assertContains(response, "Hapus")
 
