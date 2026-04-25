@@ -954,6 +954,22 @@ def promotion_execute(request, pk):
 
 
 @login_required
+def promotion_delete(request, pk):
+    promotion_run = get_object_or_404(PromotionRun.objects.select_related(
+        "source_academic_year",
+        "target_academic_year",
+    ), pk=pk)
+
+    if request.method != "POST":
+        return redirect("students:promotion_list")
+
+    run_label = f"{promotion_run.source_academic_year.name} ke {promotion_run.target_academic_year.name}"
+    promotion_run.delete()
+    messages.success(request, f"Riwayat kenaikan kelas {run_label} berhasil dihapus.")
+    return redirect("students:promotion_list")
+
+
+@login_required
 def student_create(request):
     if not (request.user.is_superuser or request.user.role == CustomUser.Role.ADMIN):
         raise PermissionDenied

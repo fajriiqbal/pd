@@ -21,6 +21,7 @@ urlpatterns = [
     path("promotions/create/", views.promotion_create, name="promotion_create"),
     path("promotions/<int:pk>/", views.promotion_detail, name="promotion_detail"),
     path("promotions/<int:pk>/execute/", views.promotion_execute, name="promotion_execute"),
+    path("promotions/<int:pk>/delete/", views.promotion_delete, name="promotion_delete"),
     path("add/", views.student_create, name="add"),
     path("bulk-delete/", views.student_bulk_delete, name="bulk_delete"),
     path("<int:pk>/", views.student_detail, name="detail"),

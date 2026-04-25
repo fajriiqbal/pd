@@ -380,6 +380,34 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertEqual(alumni.full_name, "Siswa Tanpa NIS")
         self.assertEqual(alumni.graduation_status, StudentAlumniArchive.GraduationStatus.GRADUATED)
 
+    def test_promotion_history_can_be_deleted_from_list(self):
+        target_year = AcademicYear.objects.create(
+            name="2026/2027",
+            start_date="2026-07-01",
+            end_date="2027-06-30",
+        )
+        promotion_run = PromotionRun.objects.create(
+            source_academic_year=self.academic_year,
+            target_academic_year=target_year,
+            created_by=self.operator,
+            status=PromotionRun.Status.EXECUTED,
+            summary={"total": 1},
+        )
+        item = PromotionRunItem.objects.create(
+            promotion_run=promotion_run,
+            student=self.student_7a,
+            source_study_group=self.group_7a,
+            target_study_group=self.group_8a,
+            action=PromotionRunItem.Action.PROMOTE,
+        )
+
+        response = self.client.post(reverse("students:promotion_delete", args=[promotion_run.pk]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Riwayat kenaikan kelas 2025/2026 ke 2026/2027 berhasil dihapus.")
+        self.assertFalse(PromotionRun.objects.filter(pk=promotion_run.pk).exists())
+        self.assertFalse(PromotionRunItem.objects.filter(pk=item.pk).exists())
+
     def test_promotion_workflow_allows_same_year_graduation_for_terminal_class(self):
         school_class_9 = SchoolClass.objects.create(name="Kelas 9", level_order=9)
         group_9a = StudyGroup.objects.create(
