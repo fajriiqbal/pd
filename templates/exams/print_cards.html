@@ -97,19 +97,31 @@
 
     .identity-grid {
         display: grid;
-        gap: 6px;
+        gap: 5px;
     }
 
     .identity-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
+        display: grid;
+        grid-template-columns: 54px 10px minmax(0, 1fr);
+        align-items: start;
+        gap: 4px;
         font-size: 9px;
         color: #334155;
     }
 
-    .identity-row strong {
+    .identity-row .label {
+        text-align: left;
+    }
+
+    .identity-row .colon {
+        text-align: center;
+    }
+
+    .identity-row .value {
+        text-align: left;
+        word-break: break-word;
         color: #0f172a;
+        font-weight: 700;
     }
 
     .schedule-list {
@@ -174,7 +186,7 @@
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Kartu ujian</p>
                 <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Satu halaman diisi 4 kartu</h2>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Setiap halaman dibagi 2x2 supaya pas untuk potong kartu di kertas F4.</p>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Setiap halaman ditata vertikal 4 kartu supaya pas untuk potong kartu di kertas F4.</p>
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{% url 'exams:schedule_list' %}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Atur jadwal</a>
@@ -206,28 +218,34 @@
                                 <p class="card-section-label">Identitas Siswa</p>
                                 <div class="identity-grid">
                                     <div class="identity-row">
-                                        <span>Nama</span>
-                                        <strong>{{ card.student.user.full_name }}</strong>
+                                        <span class="label">Nama</span>
+                                        <span class="colon">:</span>
+                                        <strong class="value">{{ card.student.user.full_name }}</strong>
                                     </div>
                                     <div class="identity-row">
-                                        <span>NIS</span>
-                                        <strong>{{ card.student.nis|default:"-" }}</strong>
+                                        <span class="label">NIS</span>
+                                        <span class="colon">:</span>
+                                        <strong class="value">{{ card.student.nis|default:"-" }}</strong>
                                     </div>
                                     <div class="identity-row">
-                                        <span>NISN</span>
-                                        <strong>{{ card.student.nisn|default:"-" }}</strong>
+                                        <span class="label">NISN</span>
+                                        <span class="colon">:</span>
+                                        <strong class="value">{{ card.student.nisn|default:"-" }}</strong>
                                     </div>
                                     <div class="identity-row">
-                                        <span>Kelas / Rombel</span>
-                                        <strong>{{ card.student.study_group.school_class.name }} - {{ card.student.study_group.name }}</strong>
+                                        <span class="label">Kelas</span>
+                                        <span class="colon">:</span>
+                                        <strong class="value">{{ card.student.study_group.school_class.name }} - {{ card.student.study_group.name }}</strong>
                                     </div>
                                     <div class="identity-row">
-                                        <span>Sesi</span>
-                                        <strong>{% if selected_session %}{{ selected_session.name }}{% else %}-{% endif %}</strong>
+                                        <span class="label">Sesi</span>
+                                        <span class="colon">:</span>
+                                        <strong class="value">{% if selected_session %}{{ selected_session.name }}{% else %}-{% endif %}</strong>
                                     </div>
                                     <div class="identity-row">
-                                        <span>Peserta</span>
-                                        <strong>{{ card.participant_number }}</strong>
+                                        <span class="label">Peserta</span>
+                                        <span class="colon">:</span>
+                                        <strong class="value">{{ card.participant_number }}</strong>
                                     </div>
                                 </div>
                             </div>
