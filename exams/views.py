@@ -65,6 +65,10 @@ def _session_schedule(session):
     )
 
 
+def _chunk_cards(cards, size=4):
+    return [cards[index : index + size] for index in range(0, len(cards), size)]
+
+
 def _print_context(request, title, subtitle, extra=None):
     school_identity = SchoolIdentity.objects.first()
     active_session = _active_session()
@@ -360,6 +364,7 @@ def print_cards(request):
                 "room_name": room_name,
                 "supervisor_name": supervisor_name,
                 "cards": cards,
+                "card_pages": _chunk_cards(cards, 4),
                 "schedule_items": schedule_items,
                 "print_requested": request.GET.get("print") == "1",
             },

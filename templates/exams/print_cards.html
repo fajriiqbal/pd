@@ -4,12 +4,22 @@
 
 {% block print_body %}
 <style>
-    .print-paper {
+    .print-page {
         width: 210mm;
         min-height: 330mm;
+        margin: 0 auto 8mm;
+        break-after: page;
+        page-break-after: always;
     }
 
-    .card-grid {
+    .print-page:last-child {
+        margin-bottom: 0;
+        break-after: auto;
+        page-break-after: auto;
+    }
+
+    .page-shell {
+        display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8mm;
     }
@@ -17,19 +27,9 @@
     .student-card {
         border-radius: 0;
         padding: 10px 12px;
-    }
-
-    .student-card-body {
-        gap: 8px;
-    }
-
-    .student-identity,
-    .student-schedule {
-        border-radius: 0;
-    }
-
-    .student-schedule,
-    .student-identity {
+        border: 1px solid #cbd5e1;
+        break-inside: avoid;
+        page-break-inside: avoid;
         background: white;
     }
 
@@ -43,24 +43,20 @@
     }
 
     .school-header .brand-mark {
-        width: 40px;
-        height: 40px;
-    }
-
-    .school-header .header-text {
-        min-width: 0;
+        width: 36px;
+        height: 36px;
     }
 
     .school-header .school-name {
         margin: 0;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 800;
         line-height: 1.2;
     }
 
     .school-header .school-address {
         margin: 3px 0 0;
-        font-size: 10px;
+        font-size: 9px;
         color: #475569;
         line-height: 1.35;
     }
@@ -68,77 +64,106 @@
     .card-center-note {
         margin: 0 0 8px;
         text-align: center;
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 800;
         letter-spacing: 0.16em;
         text-transform: uppercase;
         color: #64748b;
     }
 
-    .card-section-label {
-        margin-bottom: 6px;
+    .student-card-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+        gap: 5mm;
     }
 
-    .identity-row,
-    .schedule-item,
-    .schedule-item .note {
-        font-size: 10px;
+    .student-identity,
+    .student-schedule {
+        border: 1px solid #e2e8f0;
+        border-radius: 0;
+        background: white;
+        padding: 10px;
+        min-width: 0;
+    }
+
+    .card-section-label {
+        margin: 0 0 6px;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    .identity-grid {
+        display: grid;
+        gap: 6px;
+    }
+
+    .identity-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 9px;
+        color: #334155;
+    }
+
+    .identity-row strong {
+        color: #0f172a;
+    }
+
+    .schedule-list {
+        display: grid;
+        gap: 6px;
     }
 
     .schedule-item {
         border-radius: 0;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 8px 10px;
+        font-size: 9px;
     }
 
-    @media (max-width: 900px) {
-        .card-grid {
-            grid-template-columns: 1fr;
-        }
+    .schedule-item.break {
+        background: #fff7ed;
+        border-color: #fed7aa;
+    }
+
+    .schedule-item .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .schedule-item .time {
+        font-weight: 800;
+        color: #0f172a;
+        white-space: nowrap;
+    }
+
+    .schedule-item .title {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .schedule-item .note {
+        margin-top: 3px;
+        color: #64748b;
     }
 
     @media print {
-        .card-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            gap: 7mm;
+        .no-print {
+            display: none !important;
+        }
+
+        .page-shell {
+            gap: 6mm;
         }
 
         .student-card {
-            page-break-inside: avoid;
             break-inside: avoid;
-            padding: 8px 10px;
-        }
-
-        .student-card-body {
-            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) !important;
-            gap: 5mm;
-        }
-
-        .student-identity,
-        .student-schedule {
-            min-width: 0;
-        }
-
-        .student-schedule {
-            align-self: start;
-        }
-
-        .school-header {
-            gap: 10px;
-        }
-
-        .school-header .brand-mark {
-            width: 36px;
-            height: 36px;
-        }
-
-        .school-header .school-name {
-            font-size: 12px;
-        }
-
-        .school-header .school-address,
-        .identity-row,
-        .schedule-item,
-        .schedule-item .note {
-            font-size: 9px;
+            page-break-inside: avoid;
         }
     }
 </style>
@@ -148,8 +173,8 @@
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Kartu ujian</p>
-                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Kop ada di setiap kartu, bukan di lembar utama</h2>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Format ini lebih aman saat dipotong karena setiap kartu berdiri sendiri.</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Satu halaman diisi 4 kartu</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Setiap halaman dibagi 2x2 supaya pas untuk potong kartu di kertas F4.</p>
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{% url 'exams:schedule_list' %}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Atur jadwal</a>
@@ -158,82 +183,86 @@
         </div>
     </div>
 
-    <div class="card-grid">
-        {% for card in cards %}
-            <article class="student-card">
-                <div class="school-header">
-                    <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
-                    <div class="header-text">
-                        <h1 class="school-name">{{ request.school_identity.institution_name|default:"PDM" }}</h1>
-                        <p class="school-address">{{ request.school_identity.full_address|default:"Alamat madrasah" }}</p>
-                        <p class="school-address">
-                            {% if selected_session %}{{ selected_session.name }} · {{ selected_session.academic_year.name }} · {{ selected_session.get_semester_display }}{% endif %}
-                        </p>
-                    </div>
-                </div>
-
-                <p class="card-center-note">Kartu peserta ujian</p>
-
-                <div class="student-card-body">
-                    <div class="student-identity">
-                        <p class="card-section-label">Identitas Siswa</p>
-                        <div class="identity-grid">
-                            <div class="identity-row">
-                                <span>Nama</span>
-                                <strong>{{ card.student.user.full_name }}</strong>
-                            </div>
-                            <div class="identity-row">
-                                <span>NIS</span>
-                                <strong>{{ card.student.nis|default:"-" }}</strong>
-                            </div>
-                            <div class="identity-row">
-                                <span>NISN</span>
-                                <strong>{{ card.student.nisn|default:"-" }}</strong>
-                            </div>
-                            <div class="identity-row">
-                                <span>Kelas / Rombel</span>
-                                <strong>{{ card.student.study_group.school_class.name }} - {{ card.student.study_group.name }}</strong>
-                            </div>
-                            <div class="identity-row">
-                                <span>Sesi</span>
-                                <strong>{% if selected_session %}{{ selected_session.name }}{% else %}-{% endif %}</strong>
-                            </div>
-                            <div class="identity-row">
-                                <span>Peserta</span>
-                                <strong>{{ card.participant_number }}</strong>
+    {% for page_cards in card_pages %}
+        <section class="print-page">
+            <div class="page-shell">
+                {% for card in page_cards %}
+                    <article class="student-card">
+                        <div class="school-header">
+                            <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
+                            <div class="header-text">
+                                <h1 class="school-name">{{ request.school_identity.institution_name|default:"PDM" }}</h1>
+                                <p class="school-address">{{ request.school_identity.full_address|default:"Alamat madrasah" }}</p>
+                                <p class="school-address">
+                                    {% if selected_session %}{{ selected_session.name }} · {{ selected_session.academic_year.name }} · {{ selected_session.get_semester_display }}{% endif %}
+                                </p>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="student-schedule">
-                        <p class="card-section-label">Jadwal Ujian</p>
-                        <div class="schedule-list">
-                            {% for item in schedule_items %}
-                                <div class="schedule-item {% if item.item_type == 'break' %}break{% endif %}">
-                                    <div class="row">
-                                        <span class="title">{{ item.title }}</span>
-                                        <span class="time">{{ item.start_time|time:"H:i" }} - {{ item.end_time|time:"H:i" }}</span>
+                        <p class="card-center-note">Kartu peserta ujian</p>
+
+                        <div class="student-card-body">
+                            <div class="student-identity">
+                                <p class="card-section-label">Identitas Siswa</p>
+                                <div class="identity-grid">
+                                    <div class="identity-row">
+                                        <span>Nama</span>
+                                        <strong>{{ card.student.user.full_name }}</strong>
                                     </div>
-                                    <div class="note">
-                                        {{ item.exam_date|date:"D, d M Y" }}
-                                        {% if item.description %} · {{ item.description }}{% endif %}
+                                    <div class="identity-row">
+                                        <span>NIS</span>
+                                        <strong>{{ card.student.nis|default:"-" }}</strong>
+                                    </div>
+                                    <div class="identity-row">
+                                        <span>NISN</span>
+                                        <strong>{{ card.student.nisn|default:"-" }}</strong>
+                                    </div>
+                                    <div class="identity-row">
+                                        <span>Kelas / Rombel</span>
+                                        <strong>{{ card.student.study_group.school_class.name }} - {{ card.student.study_group.name }}</strong>
+                                    </div>
+                                    <div class="identity-row">
+                                        <span>Sesi</span>
+                                        <strong>{% if selected_session %}{{ selected_session.name }}{% else %}-{% endif %}</strong>
+                                    </div>
+                                    <div class="identity-row">
+                                        <span>Peserta</span>
+                                        <strong>{{ card.participant_number }}</strong>
                                     </div>
                                 </div>
-                            {% empty %}
-                                <div class="schedule-item">
-                                    <div class="title">Belum ada jadwal ujian</div>
-                                    <div class="note">Tambahkan jadwal pada menu Jadwal ujian terlebih dahulu.</div>
+                            </div>
+
+                            <div class="student-schedule">
+                                <p class="card-section-label">Jadwal Ujian</p>
+                                <div class="schedule-list">
+                                    {% for item in schedule_items %}
+                                        <div class="schedule-item {% if item.item_type == 'break' %}break{% endif %}">
+                                            <div class="row">
+                                                <span class="title">{{ item.title }}</span>
+                                                <span class="time">{{ item.start_time|time:"H:i" }} - {{ item.end_time|time:"H:i" }}</span>
+                                            </div>
+                                            <div class="note">
+                                                {{ item.exam_date|date:"D, d M Y" }}
+                                                {% if item.description %} · {{ item.description }}{% endif %}
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="schedule-item">
+                                            <div class="title">Belum ada jadwal ujian</div>
+                                            <div class="note">Tambahkan jadwal pada menu Jadwal ujian terlebih dahulu.</div>
+                                        </div>
+                                    {% endfor %}
                                 </div>
-                            {% endfor %}
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </article>
-        {% empty %}
-            <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500">
-                Pilih sesi ujian dan rombel terlebih dahulu untuk menampilkan kartu peserta.
+                    </article>
+                {% endfor %}
             </div>
-        {% endfor %}
-    </div>
+        </section>
+    {% empty %}
+        <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500">
+            Pilih sesi ujian dan rombel terlebih dahulu untuk menampilkan kartu peserta.
+        </div>
+    {% endfor %}
 </section>
 {% endblock %}
