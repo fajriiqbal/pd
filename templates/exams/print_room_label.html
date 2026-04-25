@@ -2,7 +2,7 @@
 
 {% block title %}Cetak Label Ruang | PDM{% endblock %}
 
-{% block content %}
+{% block print_body %}
 <section class="paper print-paper">
     <div class="room-label">
         <p class="paper-subtitle">{{ request.school_identity.institution_name|default:"PDM" }}</p>
@@ -21,4 +21,3 @@
     </div>
 </section>
 {% endblock %}
-
