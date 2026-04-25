@@ -685,7 +685,7 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
         font = "/F2" if bold else "/F1"
         escaped = _pdf_text(value)
         if align == "center":
-            x = x - (len(str(value)) * size * 0.17)
+            x = x - (len(str(value)) * size * 0.24)
         return f"BT {font} {size} Tf 1 0 0 1 {x:.2f} {y:.2f} Tm {escaped.decode('latin-1')} Tj ET".encode("latin-1")
 
     def centered(x_center, y, value, size=11, bold=False):
@@ -707,8 +707,8 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
     lines.append(line(44, page_height - 106, 551, page_height - 106, width=1))
 
     # Title
-    lines.append(centered(page_width / 2, page_height - 144, "SURAT MUTASI SISWA", size=15.5, bold=True))
-    lines.append(centered(page_width / 2, page_height - 160, f"Nomor: {verification_code}", size=10))
+    lines.append(centered(page_width / 2, page_height - 144, "SURAT MUTASI SISWA", size=14.3, bold=True))
+    lines.append(centered(page_width / 2, page_height - 160, f"Nomor: {verification_code}", size=9.5))
 
     # Body
     body_top = page_height - 186
@@ -716,7 +716,7 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
     lines.append(text(60, body_top - 16, f"Nama pejabat : {headmaster.teacher_name}", size=10))
     lines.append(text(60, body_top - 30, f"Jabatan      : {headmaster.task_name}", size=10))
     lines.append(text(60, body_top - 44, f"NIP          : {headmaster.nip or '-'}", size=10))
-    lines.append(text(60, body_top - 62, "Menerangkan bahwa:", size=10.2, bold=True))
+    lines.append(text(60, body_top - 62, "Menerangkan bahwa siswa tersebut di bawah ini:", size=10.2, bold=True))
 
     student_lines = [
         ("Nama siswa", mutation.student.user.full_name),
@@ -742,15 +742,17 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
             lines.append(text(value_x, current_y - (part_index * 12), part, size=10))
         current_y -= max(18, 12 * len(wrapped) + 6)
 
-    closing_y = max(current_y - 8, 336)
-    lines.append(text(60, closing_y, "Surat ini diterbitkan otomatis dari sistem madrasah dan dapat diverifikasi lewat QR code.", size=9.2))
-    lines.append(text(60, closing_y - 14, "Jika dipindai, QR code akan membuka surat mutasi ini.", size=9.2))
+    closing_y = max(current_y - 6, 332)
+    lines.append(text(60, closing_y, "Dengan ini dinyatakan bahwa siswa tersebut telah mutasi keluar dari madrasah ini.", size=9.2))
+    lines.append(text(60, closing_y - 14, "Terhitung sejak tanggal mutasi tersebut, yang bersangkutan tidak lagi menjadi peserta didik aktif.", size=9.2))
+    lines.append(text(60, closing_y - 28, "Surat ini dibuat untuk dipergunakan sebagaimana mestinya.", size=9.2))
+    lines.append(text(60, closing_y - 42, "Dokumen ini dapat diverifikasi melalui QR code pada bagian tanda tangan.", size=9.2))
 
     # Signature block
     sig_left = 352
     sig_right = 548
     sig_top = 258
-    qr_size = 42
+    qr_size = 48
     qr_left = sig_left + ((sig_right - sig_left) - qr_size) / 2
     qr_bottom = 182
 
