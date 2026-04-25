@@ -194,6 +194,31 @@ class AcademicDetailViewTests(TestCase):
         self.assertEqual(subject.curriculum, Subject.Curriculum.K13)
         self.assertEqual(subject.category, Subject.Category.RELIGION)
 
+    def test_new_academic_year_can_clone_previous_study_groups(self):
+        target_school_class = SchoolClass.objects.create(name="Kelas 8", level_order=8)
+
+        response = self.client.post(
+            reverse("academics:year_add"),
+            {
+                "name": "2026/2027",
+                "start_date": "2026-07-01",
+                "end_date": "2027-06-30",
+                "is_active": "on",
+                "clone_study_groups": "on",
+            },
+        )
+
+        self.assertRedirects(response, reverse("academics:year_list"))
+        target_year = AcademicYear.objects.get(name="2026/2027")
+        cloned_group = StudyGroup.objects.get(academic_year=target_year, name="8A")
+
+        self.assertEqual(cloned_group.school_class, target_school_class)
+        self.assertEqual(cloned_group.homeroom_teacher, self.homeroom_teacher)
+        self.assertEqual(cloned_group.capacity, self.study_group.capacity)
+        self.assertEqual(cloned_group.room_name, self.study_group.room_name)
+        self.assertEqual(cloned_group.notes, self.study_group.notes)
+        self.assertTrue(cloned_group.is_active)
+
 
 class SubjectApiTests(TestCase):
     def setUp(self):

@@ -24,6 +24,16 @@ class AcademicYearForm(forms.ModelForm):
         }
 
 
+class AcademicYearCreateForm(AcademicYearForm):
+    clone_study_groups = forms.BooleanField(
+        label="Salin rombel dari tahun ajaran sebelumnya",
+        required=False,
+        initial=True,
+        help_text="Otomatis membuat rombel baru berdasarkan rombel aktif pada tahun ajaran sebelumnya, termasuk wali kelas bila sudah diisi.",
+        widget=forms.CheckboxInput(attrs={"class": "mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900"}),
+    )
+
+
 class SchoolClassForm(forms.ModelForm):
     class Meta:
         model = SchoolClass

@@ -1,3 +1,4 @@
+import re
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -11,7 +12,7 @@ from accounts.models import CustomUser
 from students.models import StudentProfile
 
 from .curriculum import SUBJECT_PRESETS
-from .forms import AcademicYearForm, ClassSubjectForm, GradeBookForm, SchoolClassForm, StudyGroupForm, SubjectForm
+from .forms import AcademicYearCreateForm, AcademicYearForm, ClassSubjectForm, GradeBookForm, SchoolClassForm, StudyGroupForm, SubjectForm
 from .models import AcademicYear, ClassSubject, GradeBook, SchoolClass, StudentGrade, StudyGroup, Subject
 
 
@@ -19,6 +20,75 @@ def _sync_grade_book_students(grade_book):
     students = grade_book.study_group.students.filter(is_active=True).select_related("user").order_by("user__full_name")
     for student in students:
         StudentGrade.objects.get_or_create(grade_book=grade_book, student=student)
+
+
+def _group_suffix(group_name):
+    match = re.search(r"([A-Za-z]+)$", group_name.strip())
+    return match.group(1).upper() if match else ""
+
+
+def _next_school_class(source_class):
+    return SchoolClass.objects.filter(
+        level_order__gt=source_class.level_order,
+        is_active=True,
+    ).order_by("level_order", "name").first()
+
+
+def _clone_study_group_name(source_group, target_school_class):
+    target_name = target_school_class.name.strip()
+    if target_name.lower().startswith("kelas "):
+        target_name = target_name[6:].strip()
+
+    suffix = _group_suffix(source_group.name)
+    if not suffix:
+        return target_name or source_group.name
+    if target_name.endswith(suffix):
+        return target_name
+    if target_name and target_name[-1].isalnum():
+        return f"{target_name}{suffix}"
+    return f"{target_name} {suffix}"
+
+
+def _clone_study_groups_from_previous_year(target_academic_year):
+    source_year = (
+        AcademicYear.objects.filter(start_date__lt=target_academic_year.start_date)
+        .order_by("-start_date")
+        .first()
+    )
+    if not source_year:
+        return {"source_year": None, "created": 0}
+
+    source_groups = StudyGroup.objects.select_related(
+        "school_class",
+        "homeroom_teacher",
+    ).filter(
+        academic_year=source_year,
+        is_active=True,
+    ).order_by("school_class__level_order", "name")
+
+    created_count = 0
+    for source_group in source_groups:
+        target_school_class = _next_school_class(source_group.school_class)
+        if not target_school_class:
+            continue
+
+        group_name = _clone_study_group_name(source_group, target_school_class)
+        _, created = StudyGroup.objects.get_or_create(
+            academic_year=target_academic_year,
+            name=group_name,
+            defaults={
+                "school_class": target_school_class,
+                "homeroom_teacher": source_group.homeroom_teacher,
+                "capacity": source_group.capacity,
+                "room_name": source_group.room_name,
+                "notes": source_group.notes,
+                "is_active": source_group.is_active,
+            },
+        )
+        if created:
+            created_count += 1
+
+    return {"source_year": source_year, "created": created_count}
 
 
 def _parse_score(value):
@@ -618,10 +688,38 @@ def year_list(request):
 
 @login_required
 def academic_year_create(request):
-    form = AcademicYearForm(request.POST or None)
+    form = AcademicYearCreateForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Tahun ajaran berhasil ditambahkan.")
+        with transaction.atomic():
+            academic_year = form.save()
+            clone_result = None
+            if form.cleaned_data.get("clone_study_groups"):
+                clone_result = _clone_study_groups_from_previous_year(academic_year)
+
+        if clone_result:
+            if clone_result["source_year"] and clone_result["created"]:
+                messages.success(
+                    request,
+                    (
+                        f"Tahun ajaran berhasil ditambahkan. "
+                        f"{clone_result['created']} rombel berhasil disalin dari {clone_result['source_year'].name}."
+                    ),
+                )
+            elif clone_result["source_year"]:
+                messages.success(
+                    request,
+                    (
+                        "Tahun ajaran berhasil ditambahkan. "
+                        f"Tidak ada rombel baru yang bisa disalin dari {clone_result['source_year'].name}."
+                    ),
+                )
+            else:
+                messages.success(
+                    request,
+                    "Tahun ajaran berhasil ditambahkan. Belum ada tahun ajaran sebelumnya untuk disalin.",
+                )
+        else:
+            messages.success(request, "Tahun ajaran berhasil ditambahkan.")
         return redirect("academics:year_list")
 
     return render(
@@ -634,7 +732,7 @@ def academic_year_create(request):
             "page_description": "Tentukan periode belajar dan tandai tahun ajaran aktif bila diperlukan.",
             "submit_label": "Simpan tahun ajaran",
             "cancel_url": "academics:year_list",
-            "checkbox_fields": ["is_active"],
+            "checkbox_fields": ["is_active", "clone_study_groups"],
         },
     )
 
