@@ -7,6 +7,8 @@ from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.utils import timezone
 
+from institution.models import SchoolIdentity
+
 try:
     import qrcode
     from PIL import Image, ImageDraw
@@ -14,8 +16,6 @@ except ImportError:  # pragma: no cover - handled at runtime for operator-facing
     qrcode = None
     Image = None
     ImageDraw = None
-
-from teachers.utils import get_headmaster_teacher
 
 
 A4_WIDTH = 595.28
@@ -85,6 +85,20 @@ class HeadmasterInfo:
     task_name: str
 
 
+@dataclass
+class SchoolIdentityInfo:
+    institution_name: str
+    legal_name: str
+    address: str
+    full_address: str
+    phone_number: str
+    email: str
+    website: str
+    principal_name: str
+    principal_nip: str
+    letter_footer: str
+
+
 def _pdf_text(text):
     raw = (text or "").encode("latin-1", "replace")
     raw = raw.replace(b"\\", b"\\\\").replace(b"(", b"\\(").replace(b")", b"\\)")
@@ -126,6 +140,36 @@ def _wrap_text(text, limit=90):
             current = word
     lines.append(current)
     return lines
+
+
+def _get_school_identity_info():
+    identity = SchoolIdentity.objects.first()
+    if not identity:
+        return SchoolIdentityInfo(
+            institution_name=SCHOOL_NAME,
+            legal_name="",
+            address="Jalan sesuai data madrasah",
+            full_address="Jalan sesuai data madrasah",
+            phone_number="",
+            email="",
+            website="",
+            principal_name="Kepala Madrasah",
+            principal_nip="-",
+            letter_footer="",
+        )
+
+    return SchoolIdentityInfo(
+        institution_name=identity.institution_name,
+        legal_name=identity.legal_name,
+        address=identity.address,
+        full_address=identity.full_address,
+        phone_number=identity.phone_number,
+        email=identity.email,
+        website=identity.website,
+        principal_name=identity.principal_name,
+        principal_nip=identity.principal_nip,
+        letter_footer=identity.letter_footer,
+    )
 
 
 def _escape_code39(value):
@@ -657,18 +701,11 @@ def _find_logo_path():
 
 
 def _get_headmaster_info():
-    teacher = get_headmaster_teacher()
-    if not teacher:
-        raise MutationLetterError(
-            "Data kepala madrasah belum ditemukan. Tambahkan tugas tambahan guru dengan tipe Pimpinan/Kepala Madrasah."
-        )
-
-    task = teacher.additional_tasks.filter(is_active=True, task_type="pimpinan").order_by("-start_date", "-created_at").first()
-    task_name = task.name if task else "Kepala Madrasah"
+    school_identity = _get_school_identity_info()
     return HeadmasterInfo(
-        teacher_name=teacher.user.full_name,
-        nip=teacher.nip or "",
-        task_name=task_name or "Kepala Madrasah",
+        teacher_name=school_identity.principal_name,
+        nip=school_identity.principal_nip,
+        task_name="Kepala Madrasah",
     )
 
 
@@ -676,7 +713,7 @@ def _build_code(mutation):
     return f"{VERIFICATION_PREFIX}-{mutation.pk:05d}-{mutation.mutation_date:%Y%m%d}"
 
 
-def _build_content(mutation, headmaster, verification_code, issue_date, logo_exists):
+def _build_content(mutation, headmaster, school_identity, verification_code, issue_date, logo_exists):
     lines = []
     page_height = A4_HEIGHT
     page_width = A4_WIDTH
@@ -700,10 +737,22 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
 
     # Header
     header_x = 124
-    lines.append(text(header_x, page_height - 40, SCHOOL_NAME, size=15, bold=True))
-    lines.append(text(header_x, page_height - 58, f"{SCHOOL_LOCATION}", size=12.5, bold=True))
-    lines.append(text(header_x, page_height - 74, "Jalan sesuai data madrasah", size=8.5))
-    lines.append(text(header_x, page_height - 86, "Email / Telp: sesuai data madrasah", size=8.5))
+    school_name = school_identity.institution_name or SCHOOL_NAME
+    lines.append(text(header_x, page_height - 40, school_name.upper(), size=15, bold=True))
+    if school_identity.legal_name and school_identity.legal_name.strip() and school_identity.legal_name.strip() != school_name:
+        lines.append(text(header_x, page_height - 56, school_identity.legal_name, size=11.2, bold=True))
+        address_y = page_height - 72
+    else:
+        address_y = page_height - 62
+    lines.append(text(header_x, address_y, school_identity.full_address or "Alamat sesuai data madrasah", size=8.5))
+    contact_parts = []
+    if school_identity.phone_number:
+        contact_parts.append(f"Telp: {school_identity.phone_number}")
+    if school_identity.email:
+        contact_parts.append(f"Email: {school_identity.email}")
+    if school_identity.website:
+        contact_parts.append(school_identity.website)
+    lines.append(text(header_x, address_y - 12, " | ".join(contact_parts) or "Kontak sesuai data madrasah", size=8.5))
     lines.append(line(44, page_height - 106, 551, page_height - 106, width=1))
 
     # Title
@@ -767,12 +816,15 @@ def _build_content(mutation, headmaster, verification_code, issue_date, logo_exi
     lines.append(text(sig_left, 142, headmaster.teacher_name, size=11, bold=True))
     lines.append(text(sig_left, 126, f"NIP. {headmaster.nip or '-'}", size=10))
     lines.append(text(sig_left, 110, f"Kode verifikasi: {verification_code}", size=8))
+    if school_identity.letter_footer:
+        lines.append(text(60, 86, school_identity.letter_footer, size=8.2))
 
     return b"\n".join(lines)
 
 
 def _build_pdf_bytes(mutation, qr_payload=None):
     headmaster = _get_headmaster_info()
+    school_identity = _get_school_identity_info()
     issue_date = timezone.localdate()
     verification_code = _build_code(mutation)
     logo_path = _find_logo_path()
@@ -802,7 +854,14 @@ def _build_pdf_bytes(mutation, qr_payload=None):
         f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length {len(qr_rgb)} >>"
     ).encode("ascii")
     qr_id = add_object(qr_dict + b"\nstream\n" + qr_rgb + b"\nendstream")
-    content_stream = _build_content(mutation, headmaster, verification_code, issue_date, logo_exists)
+    content_stream = _build_content(
+        mutation,
+        headmaster,
+        school_identity,
+        verification_code,
+        issue_date,
+        logo_exists,
+    )
     content_id = add_object(f"<< /Length {len(content_stream)} >>".encode("ascii") + b"\nstream\n" + content_stream + b"\nendstream")
 
     resources_parts = [

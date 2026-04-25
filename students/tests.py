@@ -10,6 +10,7 @@ from django.urls import reverse
 
 from academics.models import AcademicYear, SchoolClass, StudyGroup
 from accounts.models import ActivityLog, CustomUser
+from institution.models import SchoolIdentity
 from teachers.models import TeacherAdditionalTask, TeacherProfile
 
 from .import_utils import build_student_import_preview, execute_student_import
@@ -192,6 +193,26 @@ class StudentListAndBulkDeleteTests(TestCase):
             task_type=TeacherAdditionalTask.TaskType.LEADERSHIP,
             description="Penanggung jawab utama madrasah",
             is_active=True,
+        )
+        SchoolIdentity.objects.create(
+            institution_name="MTs Sunan Kalijaga",
+            npsn="12345678",
+            nsm="MTs123456",
+            legal_name="MTs Sunan Kalijaga Tulung",
+            address="Jl. Pendidikan No. 1",
+            village="Tulung",
+            district="Kedungwaru",
+            regency="Tulungagung",
+            province="Jawa Timur",
+            postal_code="66215",
+            phone_number="08123456789",
+            email="admin@mts.example",
+            website="https://mts.example",
+            principal_name="Ahmad Suyuti",
+            principal_nip="197001012000031001",
+            operator_name="Siti Aminah",
+            operator_phone="08129876543",
+            letter_footer="Melayani dengan cepat dan tepat",
         )
         self.student_7a = self._create_student(
             username="siswa-7a",
@@ -451,8 +472,9 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertIn("attachment; filename=", response["Content-Disposition"])
         self.assertTrue(response.content.startswith(b"%PDF-"))
-        self.assertIn(b"SURAT MUTASI SISWA", response.content)
-        self.assertIn(b"Kepala Madrasah", response.content)
+        self.assertIn(b"MTS SUNAN KALIJAGA", response.content)
+        self.assertIn(b"Jl. Pendidikan No. 1", response.content)
+        self.assertIn(b"197001012000031001", response.content)
 
     def test_public_mutation_letter_url_returns_pdf(self):
         mutation = StudentMutationRecord.objects.create(
@@ -475,7 +497,7 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertIn("inline; filename=", response["Content-Disposition"])
         self.assertTrue(response.content.startswith(b"%PDF-"))
-        self.assertIn(b"SURAT MUTASI SISWA", response.content)
+        self.assertIn(b"MTS SUNAN KALIJAGA", response.content)
 
     def test_promotion_workflow_allows_same_year_graduation_for_terminal_class(self):
         school_class_9 = SchoolClass.objects.create(name="Kelas 9", level_order=9)
