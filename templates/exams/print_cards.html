@@ -3,31 +3,127 @@
 {% block title %}Cetak Kartu Ujian | PDM{% endblock %}
 
 {% block print_body %}
-<section class="paper print-paper">
-    <div class="print-header">
-        <div class="brand-line">
-            <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
+<style>
+    .print-paper {
+        width: 210mm;
+        min-height: 297mm;
+    }
+
+    .card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .student-card {
+        border-radius: 0;
+        padding: 14px 16px;
+    }
+
+    .student-card-header {
+        border-bottom: 2px solid #0f172a;
+        border-radius: 0;
+        padding-bottom: 10px;
+        margin-bottom: 12px;
+    }
+
+    .student-card-body {
+        gap: 12px;
+    }
+
+    .student-identity,
+    .student-schedule {
+        border-radius: 0;
+    }
+
+    .student-schedule {
+        background: white;
+    }
+
+    .student-identity {
+        background: white;
+    }
+
+    .school-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+        border-bottom: 2px solid #0f172a;
+    }
+
+    .school-header .brand-mark {
+        width: 46px;
+        height: 46px;
+    }
+
+    .school-header .header-text {
+        min-width: 0;
+    }
+
+    .school-header .school-name {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    .school-header .school-address {
+        margin: 3px 0 0;
+        font-size: 11px;
+        color: #475569;
+        line-height: 1.35;
+    }
+
+    .card-section-label {
+        margin-bottom: 8px;
+    }
+
+    .identity-row,
+    .schedule-item,
+    .schedule-item .note {
+        font-size: 11px;
+    }
+
+    .schedule-item {
+        border-radius: 0;
+    }
+
+    @media (max-width: 900px) {
+        .card-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<section class="space-y-4">
+    <div class="no-print rounded-[32px] border border-white/80 bg-white p-5 shadow-soft">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-                <h1 class="paper-title">{{ request.school_identity.institution_name|default:"PDM" }}</h1>
-                <p class="paper-subtitle">{{ request.school_identity.full_address|default:"Alamat madrasah" }}</p>
-                <p class="paper-subtitle">
-                    {% if selected_session %}{{ selected_session.name }} · {{ selected_session.academic_year.name }} · {{ selected_session.get_semester_display }}{% else %}Pilih sesi ujian{% endif %}
-                </p>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Kartu ujian</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Kop ada di setiap kartu, bukan di lembar utama</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Format ini lebih aman saat dipotong karena setiap kartu berdiri sendiri.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{% url 'exams:schedule_list' %}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Atur jadwal</a>
+                <a href="{% url 'exams:overview' %}" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Kembali</a>
             </div>
         </div>
     </div>
 
-    {% if selected_group %}
-        <div class="paper-meta">
-            <div><strong>Rombel:</strong> {{ selected_group.school_class.name }} - {{ selected_group.name }}</div>
-            <div><strong>Tanggal cetak:</strong> {{ exam_date|date:"d M Y" }}</div>
-            <div><strong>Jadwal:</strong> {% if selected_schedule_session %}{{ selected_schedule_session.name }}{% else %}-{% endif %}</div>
-        </div>
-    {% endif %}
-
-    <div class="card-grid mt-5">
+    <div class="card-grid">
         {% for card in cards %}
             <article class="student-card">
+                <div class="school-header">
+                    <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
+                    <div class="header-text">
+                        <h1 class="school-name">{{ request.school_identity.institution_name|default:"PDM" }}</h1>
+                        <p class="school-address">{{ request.school_identity.full_address|default:"Alamat madrasah" }}</p>
+                        <p class="school-address">
+                            {% if selected_session %}{{ selected_session.name }} · {{ selected_session.academic_year.name }} · {{ selected_session.get_semester_display }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+
                 <div class="student-card-header">
                     <div>
                         <p class="student-card-subtitle">Kartu peserta ujian</p>
@@ -37,9 +133,9 @@
                             {% if card.student.nis %} · NIS {{ card.student.nis }}{% endif %}
                         </p>
                     </div>
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">No. Peserta</p>
-                        <p class="mt-1 text-lg font-bold text-slate-950">{{ card.participant_number }}</p>
+                    <div class="rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-right">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">No. Peserta</p>
+                        <p class="mt-1 text-base font-bold text-slate-950">{{ card.participant_number }}</p>
                     </div>
                 </div>
 
@@ -62,10 +158,6 @@
                             <div class="identity-row">
                                 <span>Sesi</span>
                                 <strong>{% if selected_session %}{{ selected_session.name }}{% else %}-{% endif %}</strong>
-                            </div>
-                            <div class="identity-row">
-                                <span>Keterangan</span>
-                                <strong>Kartu wajib dibawa saat ujian</strong>
                             </div>
                         </div>
                     </div>
