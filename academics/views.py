@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models.deletion import ProtectedError
 from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -676,7 +677,11 @@ def year_list(request):
                 "homeroom_teacher__user",
             ).prefetch_related("students__user"),
         )
-    ).annotate(study_group_total=Count("study_groups", distinct=True))
+    ).annotate(
+        study_group_total=Count("study_groups", distinct=True),
+        source_promotion_run_total=Count("promotion_runs_as_source", distinct=True),
+        target_promotion_run_total=Count("promotion_runs_as_target", distinct=True),
+    )
     context = {
         "years": years,
         "year_count": AcademicYear.objects.count(),
@@ -764,13 +769,28 @@ def academic_year_update(request, pk):
 @login_required
 def academic_year_delete(request, pk):
     academic_year = get_object_or_404(AcademicYear, pk=pk)
-    if academic_year.study_groups.exists():
-        messages.error(request, "Tahun ajaran tidak bisa dihapus karena masih memiliki rombel.")
+    if academic_year.is_active:
+        messages.error(request, "Tahun ajaran aktif tidak bisa dihapus. Nonaktifkan dulu tahun ajaran lain sebagai pengganti.")
+        return redirect("academics:year_list")
+
+    has_study_groups = academic_year.study_groups.exists()
+    has_promotion_runs = academic_year.promotion_runs_as_source.exists() or academic_year.promotion_runs_as_target.exists()
+    if has_study_groups or has_promotion_runs:
+        reasons = []
+        if has_study_groups:
+            reasons.append("masih memiliki rombel")
+        if has_promotion_runs:
+            reasons.append("masih dipakai oleh proses kenaikan kelas")
+        messages.error(request, f"Tahun ajaran tidak bisa dihapus karena {', '.join(reasons)}.")
         return redirect("academics:year_list")
 
     if request.method == "POST":
-        academic_year.delete()
-        messages.success(request, "Tahun ajaran berhasil dihapus.")
+        try:
+            academic_year.delete()
+        except ProtectedError:
+            messages.error(request, "Tahun ajaran tidak bisa dihapus karena masih dipakai data lain di sistem.")
+        else:
+            messages.success(request, "Tahun ajaran berhasil dihapus.")
         return redirect("academics:year_list")
 
     return render(

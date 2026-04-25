@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import CustomUser
+from students.models import PromotionRun
 from students.models import StudentProfile
 from teachers.models import TeacherProfile
 
@@ -226,6 +227,31 @@ class AcademicDetailViewTests(TestCase):
         self.assertContains(response, reverse("academics:year_delete", args=[self.academic_year.pk]))
         self.assertContains(response, 'title="Tidak bisa dihapus karena masih memiliki rombel"')
         self.assertContains(response, "Hapus")
+
+    def test_active_year_delete_is_blocked_before_protected_error(self):
+        response = self.client.post(reverse("academics:year_delete", args=[self.academic_year.pk]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tahun ajaran aktif tidak bisa dihapus")
+        self.assertTrue(AcademicYear.objects.filter(pk=self.academic_year.pk).exists())
+
+    def test_year_delete_is_blocked_when_used_by_promotion_run(self):
+        target_year = AcademicYear.objects.create(
+            name="2026/2027",
+            start_date="2026-07-01",
+            end_date="2027-06-30",
+        )
+        PromotionRun.objects.create(
+            source_academic_year=self.academic_year,
+            target_academic_year=target_year,
+            created_by=self.operator,
+        )
+
+        response = self.client.post(reverse("academics:year_delete", args=[target_year.pk]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "masih dipakai oleh proses kenaikan kelas")
+        self.assertTrue(AcademicYear.objects.filter(pk=target_year.pk).exists())
 
 
 class SubjectApiTests(TestCase):
