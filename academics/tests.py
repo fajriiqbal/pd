@@ -4,9 +4,10 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import CustomUser
-from students.models import PromotionRun
+from students.models import PromotionRun, PromotionRunItem
 from students.models import StudentProfile
 from teachers.models import TeacherProfile
+from institution.models import SchoolIdentity
 
 from .models import AcademicYear, ClassSubject, GradeBook, StudentGrade, SchoolClass, StudyGroup, Subject
 
@@ -20,6 +21,17 @@ class AcademicDetailViewTests(TestCase):
             role=CustomUser.Role.ADMIN,
         )
         self.client.force_login(self.operator)
+
+        SchoolIdentity.objects.create(
+            institution_name="MTs Sunan Kalijaga",
+            npsn="12345678",
+            address="Jl. Pendidikan No. 1",
+            district="Kedungwaru",
+            regency="Tulungagung",
+            province="Jawa Timur",
+            principal_name="Ahmad Suyuti",
+            principal_nip="197001012000031001",
+        )
 
         self.academic_year = AcademicYear.objects.create(
             name="2025/2026",
@@ -252,6 +264,37 @@ class AcademicDetailViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "masih dipakai oleh proses kenaikan kelas")
         self.assertTrue(AcademicYear.objects.filter(pk=target_year.pk).exists())
+
+    def test_study_group_delete_is_blocked_when_used_by_promotion_items(self):
+        target_year = AcademicYear.objects.create(
+            name="2026/2027",
+            start_date="2026-07-01",
+            end_date="2027-06-30",
+        )
+        target_group = StudyGroup.objects.create(
+            academic_year=target_year,
+            school_class=self.school_class,
+            name="7B",
+            capacity=32,
+        )
+        promotion_run = PromotionRun.objects.create(
+            source_academic_year=self.academic_year,
+            target_academic_year=target_year,
+            created_by=self.operator,
+        )
+        PromotionRunItem.objects.create(
+            promotion_run=promotion_run,
+            student=self.student,
+            source_study_group=self.study_group,
+            target_study_group=target_group,
+            action=PromotionRunItem.Action.PROMOTE,
+        )
+
+        response = self.client.post(reverse("academics:group_delete", args=[target_group.pk]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "masih dipakai data lain")
+        self.assertTrue(StudyGroup.objects.filter(pk=target_group.pk).exists())
 
 
 class SubjectApiTests(TestCase):

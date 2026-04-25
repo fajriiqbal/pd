@@ -924,13 +924,27 @@ def study_group_update(request, pk):
 @login_required
 def study_group_delete(request, pk):
     study_group = get_object_or_404(StudyGroup, pk=pk)
+    blockers = []
+    if study_group.grade_books.exists():
+        blockers.append("Ledger nilai masih terhubung ke rombel ini.")
+    if study_group.promotion_items_as_source.exists() or study_group.promotion_items_as_target.exists():
+        blockers.append("Data kenaikan kelas masih memakai rombel ini sebagai asal atau tujuan.")
     if study_group.students.exists():
-        messages.error(request, "Rombel tidak bisa dihapus karena masih memiliki siswa terhubung.")
-        return redirect("academics:overview")
+        blockers.append("Masih ada siswa yang terhubung ke rombel ini.")
 
     if request.method == "POST":
-        study_group.delete()
-        messages.success(request, "Rombel berhasil dihapus.")
+        if blockers:
+            messages.error(request, "Rombel tidak bisa dihapus karena masih dipakai data lain di sistem.")
+            return redirect("academics:overview")
+        try:
+            study_group.delete()
+        except ProtectedError:
+            messages.error(
+                request,
+                "Rombel tidak bisa dihapus karena masih dipakai data akademik lain seperti ledger nilai atau riwayat kenaikan kelas.",
+            )
+        else:
+            messages.success(request, "Rombel berhasil dihapus.")
         return redirect("academics:overview")
 
     return render(
@@ -940,5 +954,6 @@ def study_group_delete(request, pk):
             "item_name": study_group.name,
             "item_type": "rombel",
             "cancel_url": "academics:overview",
+            "delete_warnings": blockers,
         },
     )
