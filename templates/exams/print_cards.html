@@ -19,13 +19,6 @@
         padding: 10px 12px;
     }
 
-    .student-card-header {
-        border-bottom: 2px solid #0f172a;
-        border-radius: 0;
-        padding-bottom: 8px;
-        margin-bottom: 8px;
-    }
-
     .student-card-body {
         gap: 8px;
     }
@@ -180,19 +173,6 @@
                 </div>
 
                 <p class="card-center-note">Kartu peserta ujian</p>
-
-                <div class="student-card-header">
-                    <div>
-                        <h2 class="student-card-title" style="font-size:14px;">{{ card.student.user.full_name }}</h2>
-                        <p class="student-card-subtitle">
-                            {% if selected_group %}{{ selected_group.school_class.name }} - {{ selected_group.name }}{% endif %}
-                        </p>
-                    </div>
-                    <div class="rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-right">
-                        <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-500">No. Peserta</p>
-                        <p class="mt-1 text-sm font-bold text-slate-950">{{ card.participant_number }}</p>
-                    </div>
-                </div>
 
                 <div class="student-card-body">
                     <div class="student-identity">
