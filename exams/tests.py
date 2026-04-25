@@ -77,6 +77,18 @@ class ExamMenuTests(TestCase):
         self.assertContains(response, "Menu ujian")
         self.assertContains(response, "Kartu ujian")
 
+    def test_overview_is_available_for_teacher(self):
+        teacher = CustomUser.objects.create_user(
+            username="guru-ujian",
+            password="rahasia123",
+            full_name="Guru Ujian",
+            role=CustomUser.Role.TEACHER,
+        )
+        self.client.force_login(teacher)
+        response = self.client.get(reverse("exams:overview"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Menu ujian")
+
     def test_print_cards_shows_selected_student(self):
         response = self.client.get(
             reverse("exams:cards"),
@@ -91,4 +103,3 @@ class ExamMenuTests(TestCase):
         self.assertContains(response, "Kartu Ujian")
         self.assertContains(response, "Siswa Satu")
         self.assertContains(response, "PAS Ganjil")
-

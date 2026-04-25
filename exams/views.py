@@ -15,7 +15,7 @@ from .models import ExamSession
 
 
 def _is_exam_admin(user):
-    return bool(user.is_superuser or user.role == CustomUser.Role.ADMIN)
+    return bool(user.is_superuser or user.role in {CustomUser.Role.ADMIN, CustomUser.Role.TEACHER})
 
 
 def _require_exam_admin(request):
