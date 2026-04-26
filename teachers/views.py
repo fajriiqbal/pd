@@ -162,7 +162,8 @@ def teaching_assignment_create(request):
             "page_title": "Tambah mapel diajar per rombel",
             "page_description": "Hubungkan guru dengan rombel, mapel, KKM, dan jumlah jam pelajaran.",
             "submit_label": "Simpan pengaturan",
-            "cancel_url": _teaching_assignment_return_url(request),
+            "cancel_url": "teachers:teaching_assignments",
+            "cancel_href": _teaching_assignment_return_url(request),
             "checkbox_fields": ["is_active"],
         },
     )
@@ -186,7 +187,8 @@ def teaching_assignment_update(request, pk):
             "page_title": f"Edit mapel diajar {assignment}",
             "page_description": "Perbarui guru pengampu, rombel, KKM, jam pelajaran, atau status aktif.",
             "submit_label": "Update pengaturan",
-            "cancel_url": _teaching_assignment_return_url(request),
+            "cancel_url": "teachers:teaching_assignments",
+            "cancel_href": _teaching_assignment_return_url(request),
             "checkbox_fields": ["is_active"],
         },
     )
@@ -206,7 +208,8 @@ def teaching_assignment_delete(request, pk):
         {
             "item_name": str(assignment),
             "item_type": "mapel yang diajar",
-            "cancel_url": _teaching_assignment_return_url(request),
+            "cancel_url": "teachers:teaching_assignments",
+            "cancel_href": _teaching_assignment_return_url(request),
         },
     )
 

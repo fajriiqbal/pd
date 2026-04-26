@@ -49,9 +49,15 @@
                 <button type="submit" class="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,_#1f9d55,_#157347)] px-5 py-2.5 text-sm font-medium text-white shadow-[0_12px_26px_-16px_rgba(21,115,71,0.75)] transition duration-200 hover:brightness-[1.03] hover:shadow-[0_16px_34px_-18px_rgba(21,115,71,0.85)]">
                     {{ submit_label }}
                 </button>
-                <a href="{% url cancel_url %}" class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-2.5 text-center text-sm font-medium text-slate-600 transition duration-200 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900">
-                    Batal
-                </a>
+                {% if cancel_href %}
+                    <a href="{{ cancel_href }}" class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-2.5 text-center text-sm font-medium text-slate-600 transition duration-200 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900">
+                        Batal
+                    </a>
+                {% else %}
+                    <a href="{% url cancel_url %}" class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-2.5 text-center text-sm font-medium text-slate-600 transition duration-200 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900">
+                        Batal
+                    </a>
+                {% endif %}
             </div>
         </form>
     </div>

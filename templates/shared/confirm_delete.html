@@ -31,9 +31,15 @@
             <button type="submit" class="rounded-2xl bg-rose-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-rose-700">
                 Ya, hapus sekarang
             </button>
-            <a href="{% url cancel_url %}" class="rounded-2xl border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                Batal
-            </a>
+            {% if cancel_href %}
+                <a href="{{ cancel_href }}" class="rounded-2xl border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    Batal
+                </a>
+            {% else %}
+                <a href="{% url cancel_url %}" class="rounded-2xl border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    Batal
+                </a>
+            {% endif %}
         </form>
     </div>
 </section>
