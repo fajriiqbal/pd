@@ -103,9 +103,7 @@ class StudentImportUtilsTests(TestCase):
         self.assertEqual(result["failed"], 0)
 
         student = StudentProfile.objects.select_related("user").get(nisn="88776655")
-        self.assertIsNotNone(student.nis)
-        self.assertTrue(student.nis.startswith("25"))
-        self.assertEqual(len(student.nis), 6)
+        self.assertIsNone(student.nis)
         self.assertEqual(student.user.full_name, "Ahmad Tanpa NIS")
 
     def test_import_update_keeps_existing_nis_when_row_matches_by_nisn(self):
@@ -265,8 +263,8 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertContains(response, "Siswa Tanpa NIS")
         self.assertNotContains(response, "Siswa Kelas Tujuh")
         self.assertTrue(self.student_8a_without_nis.nis)
-        self.assertTrue(self.student_8a_without_nis.nis.startswith("25"))
-        self.assertEqual(len(self.student_8a_without_nis.nis), 6)
+        self.assertTrue(self.student_8a_without_nis.nis.startswith("MTs12345624"))
+        self.assertEqual(len(self.student_8a_without_nis.nis), len("MTs12345624") + 4)
 
     def test_student_list_rombel_options_follow_selected_class_and_show_student_totals(self):
         group_7b = StudyGroup.objects.create(

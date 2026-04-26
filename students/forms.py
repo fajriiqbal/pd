@@ -190,7 +190,7 @@ class StudentRecordForm(forms.ModelForm):
             self.fields["is_school_active"].initial = True
             self.fields["is_active"].initial = True
 
-        self.fields["nis"].help_text = "Kosongkan agar sistem mengisi otomatis dari 2 digit tahun masuk + nomor urut 4 digit."
+        self.fields["nis"].help_text = "Kosongkan agar sistem mengisi otomatis dari NSM + 2 digit tahun angkatan + nomor urut 4 digit."
 
     def clean_username(self):
         username = self.cleaned_data["username"].strip()
