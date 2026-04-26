@@ -11,6 +11,7 @@ from accounts.models import CustomUser
 from academics.models import AcademicYear, SchoolClass, StudyGroup
 
 from .models import StudentProfile
+from .year_utils import infer_entry_year_from_level, infer_level_order_from_label
 
 IMPORT_CACHE_DIR = Path(settings.MEDIA_ROOT) / "import_cache"
 
@@ -174,10 +175,7 @@ def _split_group_label(label):
 
 
 def _infer_level_order(class_name):
-    match = re.search(r"(\d+)", class_name or "")
-    if match:
-        return int(match.group(1))
-    return 99
+    return infer_level_order_from_label(class_name) or 99
 
 
 def _infer_entry_year_from_school_class(class_name, active_year):
@@ -185,10 +183,8 @@ def _infer_entry_year_from_school_class(class_name, active_year):
         return None
 
     start_year = active_year.start_date.year
-    level_order = _infer_level_order(class_name)
-    if 7 <= level_order <= 9:
-        return start_year - max(level_order - 7, 0)
-    return start_year
+    level_order = infer_level_order_from_label(class_name)
+    return infer_entry_year_from_level(level_order, start_year)
 
 
 def _generate_unique_username(preferred):

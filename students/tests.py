@@ -145,6 +145,23 @@ class StudentImportUtilsTests(TestCase):
         self.assertEqual(student.user.full_name, "Nama Baru")
         self.assertEqual(student.address, "Alamat Baru")
 
+    def test_import_infers_entry_year_from_class_label(self):
+        uploaded_file = self._build_workbook_file(
+            sheet_title="Kelas 8 - 8A",
+            headers=["Nama Lengkap", "NISN", "Jenis Kelamin", "Tanggal Lahir"],
+            rows=[["Ahmad Angkatan 2024", "99887700", "L", "2012-05-10"]],
+        )
+
+        preview = build_student_import_preview(uploaded_file, "rahasia123")
+        self.assertTrue(preview["ok"])
+        self.assertEqual(preview["summary"]["ready_count"], 1)
+        self.assertEqual(preview["rows"][0]["entry_year"], 2024)
+
+        result = execute_student_import(preview)
+        self.assertEqual(result["created"], 1)
+        student = StudentProfile.objects.get(nisn="99887700")
+        self.assertEqual(student.entry_year, 2024)
+
 
 class StudentListAndBulkDeleteTests(TestCase):
     def setUp(self):
@@ -293,6 +310,28 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertEqual(student.entry_year, 2024)
         self.assertTrue(student.nis.startswith("MTs12345624"))
         self.assertEqual(len(student.nis), len("MTs12345624") + 4)
+
+    def test_manual_student_save_infers_entry_year_from_class_name(self):
+        user = CustomUser.objects.create_user(
+            username="siswa-manual-class",
+            password="rahasia123",
+            full_name="Siswa Manual Class",
+            role=CustomUser.Role.STUDENT,
+        )
+        student = StudentProfile.objects.create(
+            user=user,
+            nis=None,
+            nisn="880012",
+            gender=StudentProfile.Gender.FEMALE,
+            class_name="9A",
+            study_group=None,
+            entry_year=2025,
+            is_active=True,
+        )
+
+        self.assertEqual(student.entry_year, 2023)
+        self.assertTrue(student.nis.startswith("MTs12345623"))
+        self.assertEqual(len(student.nis), len("MTs12345623") + 4)
 
     def test_student_list_rombel_options_follow_selected_class_and_show_student_totals(self):
         group_7b = StudyGroup.objects.create(
