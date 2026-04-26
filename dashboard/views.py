@@ -402,6 +402,14 @@ def home(request):
                 "action_label": "Tambah tahun ajaran",
             }
         )
+    priority_actions.append(
+        {
+            "title": "Buka kurikulum",
+            "description": "Kelola struktur kurikulum, jadwal PBM, dan generator otomatis dari satu tempat.",
+            "url": "/academics/curriculum/",
+            "action_label": "Buka kurikulum",
+        }
+    )
     if groups_without_homeroom.exists():
         priority_actions.append(
             {

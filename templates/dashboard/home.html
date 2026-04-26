@@ -246,6 +246,36 @@
         </article>
     </div>
 
+    <section class="rounded-[32px] border border-emerald-100 bg-[linear-gradient(135deg,#ecfdf5,#f8fafc_60%,#eef2ff)] p-6 shadow-soft">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Kurikulum</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Pusat struktur, jadwal PBM, dan generator otomatis</h2>
+                <p class="mt-2 max-w-2xl text-sm text-slate-500">Menu ini disiapkan sebagai pusat kerja kurikulum agar operator langsung masuk ke alur yang benar.</p>
+            </div>
+            <a href="{% url 'academics:curriculum' %}" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Buka kurikulum</a>
+        </div>
+
+        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <a href="{% url 'academics:curriculum' %}" class="rounded-2xl border border-white/80 bg-white/85 px-4 py-4 shadow-soft transition hover:border-emerald-200 hover:bg-white">
+                <p class="text-sm text-slate-500">Dashboard kurikulum</p>
+                <p class="mt-2 font-medium text-slate-900">Ringkasan kerja kurikulum</p>
+            </a>
+            <a href="{% url 'academics:curriculum_structure' %}" class="rounded-2xl border border-white/80 bg-white/85 px-4 py-4 shadow-soft transition hover:border-emerald-200 hover:bg-white">
+                <p class="text-sm text-slate-500">Struktur kurikulum</p>
+                <p class="mt-2 font-medium text-slate-900">Mapel, guru, KKM, dan JTM</p>
+            </a>
+            <a href="{% url 'academics:pbm_schedule_list' %}" class="rounded-2xl border border-white/80 bg-white/85 px-4 py-4 shadow-soft transition hover:border-emerald-200 hover:bg-white">
+                <p class="text-sm text-slate-500">Jadwal PBM</p>
+                <p class="mt-2 font-medium text-slate-900">Jadwal manual dan otomatis</p>
+            </a>
+            <a href="{% url 'academics:pbm_schedule_generate' %}" class="rounded-2xl border border-white/80 bg-white/85 px-4 py-4 shadow-soft transition hover:border-emerald-200 hover:bg-white">
+                <p class="text-sm text-slate-500">Generate otomatis</p>
+                <p class="mt-2 font-medium text-slate-900">Preview, acak ulang, simpan</p>
+            </a>
+        </div>
+    </section>
+
     <section class="overflow-hidden rounded-[32px] border border-emerald-100 bg-[linear-gradient(135deg,#ecfdf5,#f8fafc_60%,#eef2ff)] p-6 shadow-soft">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
