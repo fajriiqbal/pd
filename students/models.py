@@ -69,13 +69,31 @@ class StudentProfile(models.Model):
     def save(self, *args, **kwargs):
         self.nis = self.nis or None
         self.nisn = self.nisn or None
+        inferred_entry_year = self._effective_entry_year()
+        if inferred_entry_year:
+            self.entry_year = inferred_entry_year
         if not self.nis:
             generated_nis = self._generate_nis()
             if generated_nis:
                 self.nis = generated_nis
         super().save(*args, **kwargs)
 
+    def _infer_level_order(self) -> int | None:
+        if self.study_group_id and self.study_group and self.study_group.school_class_id:
+            return self.study_group.school_class.level_order
+
+        import re
+
+        class_label = (self.class_name or "").strip()
+        match = re.search(r"(\d{1,2})", class_label)
+        if match:
+            return int(match.group(1))
+        return None
+
     def _effective_entry_year(self) -> int | None:
+        level_order = self._infer_level_order()
+        if level_order in {7, 8, 9}:
+            return 2025 - (level_order - 7)
         return self.entry_year or None
 
     def _generate_nis(self) -> str | None:

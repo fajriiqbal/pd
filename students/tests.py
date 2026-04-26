@@ -272,6 +272,28 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertEqual(len(self.student_8a_without_nis.nis), len("MTs12345624") + 4)
         self.assertEqual(self.student_8a_without_nis.entry_year, 2024)
 
+    def test_student_without_study_group_uses_class_name_to_infer_entry_year(self):
+        user = CustomUser.objects.create_user(
+            username="siswa-classname",
+            password="rahasia123",
+            full_name="Siswa Classname",
+            role=CustomUser.Role.STUDENT,
+        )
+        student = StudentProfile.objects.create(
+            user=user,
+            nis=None,
+            nisn="880011",
+            gender=StudentProfile.Gender.MALE,
+            class_name="8A",
+            study_group=None,
+            entry_year=2025,
+            is_active=True,
+        )
+
+        self.assertEqual(student.entry_year, 2024)
+        self.assertTrue(student.nis.startswith("MTs12345624"))
+        self.assertEqual(len(student.nis), len("MTs12345624") + 4)
+
     def test_student_list_rombel_options_follow_selected_class_and_show_student_totals(self):
         group_7b = StudyGroup.objects.create(
             academic_year=self.academic_year,
