@@ -9,7 +9,7 @@ from students.models import StudentProfile
 from teachers.models import TeacherProfile
 from institution.models import SchoolIdentity
 
-from .models import AcademicYear, ClassSubject, GradeBook, StudentGrade, SchoolClass, StudyGroup, Subject
+from .models import AcademicYear, ClassSubject, GradeBook, PbmScheduleSlot, StudentGrade, SchoolClass, StudyGroup, Subject
 
 
 class AcademicDetailViewTests(TestCase):
@@ -242,6 +242,34 @@ class AcademicDetailViewTests(TestCase):
         self.assertContains(response, "IPA")
         self.assertContains(response, "Guru Wali")
         self.assertContains(response, "78")
+
+    def test_pbm_schedule_list_groups_slots_by_class_and_day(self):
+        subject = Subject.objects.create(name="Bahasa Indonesia", code="BIN", category=Subject.Category.GENERAL)
+        class_subject = ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject,
+            teacher=self.homeroom_teacher,
+            minimum_score=75,
+            weekly_hours=4,
+        )
+        PbmScheduleSlot.objects.create(
+            academic_year=self.academic_year,
+            school_class=self.school_class,
+            day_of_week=PbmScheduleSlot.DayOfWeek.MONDAY,
+            lesson_order=1,
+            start_time="07:30",
+            end_time="08:10",
+            class_subject=class_subject,
+            room_name="Ruang A1",
+        )
+
+        response = self.client.get(reverse("academics:pbm_schedule_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Jadwal PBM")
+        self.assertContains(response, "Senin")
+        self.assertContains(response, "Bahasa Indonesia")
+        self.assertContains(response, "Ruang A1")
 
     def test_new_academic_year_can_clone_previous_study_groups(self):
         target_school_class = SchoolClass.objects.create(name="Kelas 8", level_order=8)

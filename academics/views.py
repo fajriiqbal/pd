@@ -13,8 +13,8 @@ from accounts.models import CustomUser
 from students.models import StudentProfile
 
 from .curriculum import SUBJECT_PRESETS
-from .forms import AcademicYearCreateForm, AcademicYearForm, ClassSubjectForm, GradeBookForm, SchoolClassForm, StudyGroupForm, SubjectForm
-from .models import AcademicYear, ClassSubject, GradeBook, SchoolClass, StudentGrade, StudyGroup, Subject
+from .forms import AcademicYearCreateForm, AcademicYearForm, ClassSubjectForm, GradeBookForm, PbmScheduleSlotForm, SchoolClassForm, StudyGroupForm, SubjectForm
+from .models import AcademicYear, ClassSubject, GradeBook, PbmScheduleSlot, SchoolClass, StudentGrade, StudyGroup, Subject
 
 
 def _sync_grade_book_students(grade_book):
@@ -261,7 +261,7 @@ def curriculum_dashboard(request):
         {
             "title": "Jadwal PBM",
             "description": "Gunakan struktur tersebut untuk menyusun jadwal belajar mengajar mingguan.",
-            "url": "teachers:teaching_assignments",
+            "url": "academics:pbm_schedule_list",
         },
     ]
     context = {
@@ -629,6 +629,134 @@ def class_subject_delete(request, pk):
             "item_name": str(class_subject),
             "item_type": "mapel per kelas",
             "cancel_url": "academics:subject_list",
+        },
+    )
+
+
+@login_required
+def pbm_schedule_list(request):
+    query = request.GET.get("q", "").strip()
+    year_id = request.GET.get("year", "").strip()
+    class_id = request.GET.get("class", "").strip()
+
+    slots = PbmScheduleSlot.objects.select_related(
+        "academic_year",
+        "school_class",
+        "class_subject__subject",
+        "class_subject__teacher__user",
+        "teacher__user",
+    ).filter(is_active=True)
+
+    if year_id:
+        slots = slots.filter(academic_year_id=year_id)
+    if class_id:
+        slots = slots.filter(school_class_id=class_id)
+    if query:
+        slots = slots.filter(
+            Q(school_class__name__icontains=query)
+            | Q(class_subject__subject__name__icontains=query)
+            | Q(class_subject__teacher__user__full_name__icontains=query)
+            | Q(teacher__user__full_name__icontains=query)
+        )
+
+    academic_years = AcademicYear.objects.order_by("-start_date")
+    school_classes = SchoolClass.objects.filter(is_active=True).order_by("level_order", "name")
+    grouped_rows = []
+    for school_class in school_classes:
+        class_slots = slots.filter(school_class=school_class)
+        if not class_slots.exists():
+            continue
+        day_groups = []
+        for day_value, day_label in PbmScheduleSlot.DayOfWeek.choices:
+            day_slots = list(class_slots.filter(day_of_week=day_value).order_by("lesson_order"))
+            if day_slots:
+                day_groups.append({"label": day_label, "items": day_slots})
+        grouped_rows.append(
+            {
+                "school_class": school_class,
+                "day_groups": day_groups,
+                "total_weekly_hours": class_slots.aggregate(total=Sum("class_subject__weekly_hours"))["total"] or 0,
+            }
+        )
+
+    return render(
+        request,
+        "academics/pbm_schedule_list.html",
+        {
+            "query": query,
+            "academic_years": academic_years,
+            "school_classes": school_classes,
+            "selected_year": year_id,
+            "selected_class": class_id,
+            "grouped_rows": grouped_rows,
+            "slot_count": slots.count(),
+            "class_count": len(grouped_rows),
+        },
+    )
+
+
+@login_required
+def pbm_schedule_create(request):
+    form = PbmScheduleSlotForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Slot jadwal PBM berhasil ditambahkan.")
+        return redirect("academics:pbm_schedule_list")
+
+    return render(
+        request,
+        "shared/form_page.html",
+        {
+            "form": form,
+            "page_kicker": "Jadwal PBM",
+            "page_title": "Tambah slot jadwal PBM",
+            "page_description": "Isi slot mingguan untuk kelas, mapel, guru, dan jam ke-.",
+            "submit_label": "Simpan slot",
+            "cancel_url": "academics:pbm_schedule_list",
+            "checkbox_fields": ["is_active"],
+        },
+    )
+
+
+@login_required
+def pbm_schedule_update(request, pk):
+    slot = get_object_or_404(PbmScheduleSlot, pk=pk)
+    form = PbmScheduleSlotForm(request.POST or None, instance=slot)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Slot jadwal PBM berhasil diperbarui.")
+        return redirect("academics:pbm_schedule_list")
+
+    return render(
+        request,
+        "shared/form_page.html",
+        {
+            "form": form,
+            "page_kicker": "Jadwal PBM",
+            "page_title": f"Edit slot {slot}",
+            "page_description": "Perbarui jam, mapel, guru, atau kelas untuk slot mingguan ini.",
+            "submit_label": "Simpan perubahan",
+            "cancel_url": "academics:pbm_schedule_list",
+            "checkbox_fields": ["is_active"],
+        },
+    )
+
+
+@login_required
+def pbm_schedule_delete(request, pk):
+    slot = get_object_or_404(PbmScheduleSlot, pk=pk)
+    if request.method == "POST":
+        slot.delete()
+        messages.success(request, "Slot jadwal PBM berhasil dihapus.")
+        return redirect("academics:pbm_schedule_list")
+
+    return render(
+        request,
+        "shared/confirm_delete.html",
+        {
+            "item_name": str(slot),
+            "item_type": "slot jadwal PBM",
+            "cancel_url": "academics:pbm_schedule_list",
         },
     )
 

@@ -3,7 +3,7 @@ from django import forms
 from teachers.models import TeacherProfile
 
 from .curriculum import get_subject_preset, subject_preset_choices
-from .models import AcademicYear, ClassSubject, GradeBook, SchoolClass, StudyGroup, Subject
+from .models import AcademicYear, ClassSubject, GradeBook, PbmScheduleSlot, SchoolClass, StudyGroup, Subject
 
 
 BASE_INPUT_CLASS = (
@@ -170,6 +170,53 @@ class ClassSubjectForm(forms.ModelForm):
         self.fields["teacher"].queryset = TeacherProfile.objects.select_related("user").filter(
             is_active=True
         ).order_by("user__full_name")
+
+
+class PbmScheduleSlotForm(forms.ModelForm):
+    class Meta:
+        model = PbmScheduleSlot
+        fields = [
+            "academic_year",
+            "school_class",
+            "day_of_week",
+            "lesson_order",
+            "start_time",
+            "end_time",
+            "class_subject",
+            "teacher",
+            "room_name",
+            "notes",
+            "is_active",
+        ]
+        widgets = {
+            "academic_year": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+            "school_class": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+            "day_of_week": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+            "lesson_order": forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 1}),
+            "start_time": forms.TimeInput(attrs={"class": BASE_INPUT_CLASS, "type": "time"}),
+            "end_time": forms.TimeInput(attrs={"class": BASE_INPUT_CLASS, "type": "time"}),
+            "class_subject": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+            "teacher": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+            "room_name": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Opsional"}),
+            "notes": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Catatan jadwal"}),
+            "is_active": forms.CheckboxInput(attrs={"class": "mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["academic_year"].queryset = AcademicYear.objects.order_by("-start_date")
+        self.fields["school_class"].queryset = SchoolClass.objects.filter(is_active=True).order_by("level_order", "name")
+        self.fields["class_subject"].queryset = ClassSubject.objects.select_related(
+            "school_class",
+            "subject",
+            "teacher__user",
+        ).filter(is_active=True).order_by("school_class__level_order", "subject__sort_order", "subject__name")
+        self.fields["teacher"].queryset = TeacherProfile.objects.select_related("user").filter(
+            is_active=True
+        ).order_by("user__full_name")
+        self.fields["teacher"].required = False
+        if not self.instance.pk:
+            self.fields["is_active"].initial = True
 
 
 class GradeBookForm(forms.ModelForm):

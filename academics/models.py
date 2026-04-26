@@ -192,6 +192,77 @@ class ClassSubject(models.Model):
         return f"{self.school_class.name} - {self.subject.name}"
 
 
+class PbmScheduleSlot(models.Model):
+    class DayOfWeek(models.TextChoices):
+        MONDAY = "1", "Senin"
+        TUESDAY = "2", "Selasa"
+        WEDNESDAY = "3", "Rabu"
+        THURSDAY = "4", "Kamis"
+        FRIDAY = "5", "Jumat"
+        SATURDAY = "6", "Sabtu"
+
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.PROTECT,
+        related_name="pbm_schedule_slots",
+    )
+    school_class = models.ForeignKey(
+        SchoolClass,
+        on_delete=models.CASCADE,
+        related_name="pbm_schedule_slots",
+    )
+    day_of_week = models.CharField(max_length=1, choices=DayOfWeek.choices)
+    lesson_order = models.PositiveSmallIntegerField(verbose_name="Jam ke-")
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
+    class_subject = models.ForeignKey(
+        ClassSubject,
+        on_delete=models.PROTECT,
+        related_name="pbm_schedule_slots",
+    )
+    teacher = models.ForeignKey(
+        TeacherProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pbm_schedule_slots",
+    )
+    room_name = models.CharField(max_length=100, blank=True)
+    notes = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("school_class__level_order", "day_of_week", "lesson_order")
+        verbose_name = "Slot Jadwal PBM"
+        verbose_name_plural = "Slot Jadwal PBM"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("academic_year", "school_class", "day_of_week", "lesson_order"),
+                name="unique_pbm_slot_per_class_day_order",
+            )
+        ]
+
+    def clean(self):
+        if self.class_subject_id and self.school_class_id:
+            if self.class_subject.school_class_id != self.school_class_id:
+                raise ValidationError({"class_subject": "Mapel harus sesuai kelas yang dipilih."})
+        if self.teacher_id and self.class_subject_id:
+            if self.class_subject.teacher_id and self.teacher_id != self.class_subject.teacher_id:
+                raise ValidationError({"teacher": "Guru pengampu sebaiknya sama dengan mapel kelas yang dipilih."})
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValidationError({"end_time": "Jam selesai harus setelah jam mulai."})
+
+    def save(self, *args, **kwargs):
+        if not self.teacher_id and self.class_subject_id:
+            self.teacher = self.class_subject.teacher
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.school_class.name} - {self.get_day_of_week_display()} Jam {self.lesson_order}"
+
+
 class GradeBook(models.Model):
     class Semester(models.TextChoices):
         ODD = "ganjil", "Ganjil"

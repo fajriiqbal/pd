@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AcademicYear, ClassSubject, GradeBook, SchoolClass, StudentGrade, StudyGroup, Subject
+from .models import AcademicYear, ClassSubject, GradeBook, PbmScheduleSlot, SchoolClass, StudentGrade, StudyGroup, Subject
 
 
 @admin.register(AcademicYear)
@@ -45,6 +45,14 @@ class ClassSubjectAdmin(admin.ModelAdmin):
     list_filter = ("school_class", "subject__curriculum", "subject__category", "is_active")
     search_fields = ("school_class__name", "subject__name", "teacher__user__full_name")
     autocomplete_fields = ("school_class", "subject", "teacher")
+
+
+@admin.register(PbmScheduleSlot)
+class PbmScheduleSlotAdmin(admin.ModelAdmin):
+    list_display = ("academic_year", "school_class", "day_of_week", "lesson_order", "class_subject", "teacher", "is_active")
+    list_filter = ("academic_year", "school_class", "day_of_week", "is_active")
+    search_fields = ("school_class__name", "class_subject__subject__name", "teacher__user__full_name")
+    autocomplete_fields = ("academic_year", "school_class", "class_subject", "teacher")
 
 
 class StudentGradeInline(admin.TabularInline):
