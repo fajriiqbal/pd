@@ -9,7 +9,7 @@
         Arsip guru
     </a>
     <a href="{% url 'teachers:teaching_assignments' %}" class="{% if 'teaching_assignment' in request.resolver_match.url_name or request.resolver_match.url_name == 'teaching_assignments' %}bg-slate-950 text-white{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-950{% endif %} rounded-2xl px-4 py-2.5 text-sm font-semibold transition">
-        Mapel yang diajar
+        Mapel diajar
     </a>
     <a href="{% url 'teachers:additional_tasks' %}" class="{% if 'additional_task' in request.resolver_match.url_name or request.resolver_match.url_name == 'additional_tasks' %}bg-slate-950 text-white{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-950{% endif %} rounded-2xl px-4 py-2.5 text-sm font-semibold transition">
         Tugas tambahan

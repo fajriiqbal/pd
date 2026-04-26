@@ -6,8 +6,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from academics.models import Subject
+from academics.models import AcademicYear, RombelTeachingAssignment, SchoolClass, StudyGroup, Subject
 from accounts.models import CustomUser
+from institution.models import SchoolIdentity
 
 from .import_utils import build_teacher_import_preview, execute_teacher_import
 from .models import TeacherArchive, TeacherEducationHistory, TeacherMutationRecord, TeacherProfile
@@ -158,6 +159,19 @@ class TeacherImportUtilsTests(TestCase):
 
 class TeacherProfileViewTests(TestCase):
     def setUp(self):
+        SchoolIdentity.objects.update_or_create(
+            pk=1,
+            defaults={
+                "institution_name": "MTs Sunan Kalijaga",
+                "npsn": "12345678",
+                "address": "Jl. Pendidikan No. 1",
+                "district": "Kedungwaru",
+                "regency": "Tulungagung",
+                "province": "Jawa Timur",
+                "principal_name": "Ahmad Suyuti",
+                "principal_nip": "197001012000031001",
+            },
+        )
         self.operator = CustomUser.objects.create_user(
             username="operator-guru",
             password="rahasia123",
@@ -171,16 +185,53 @@ class TeacherProfileViewTests(TestCase):
             role=CustomUser.Role.TEACHER,
         )
         self.teacher = TeacherProfile.objects.create(user=self.teacher_user, gender=TeacherProfile.Gender.MALE)
+        self.academic_year = AcademicYear.objects.create(
+            name="2025/2026",
+            start_date="2025-07-01",
+            end_date="2026-06-30",
+            is_active=True,
+        )
+        self.school_class = SchoolClass.objects.create(name="Kelas 7", level_order=7)
+        self.study_group = StudyGroup.objects.create(
+            academic_year=self.academic_year,
+            school_class=self.school_class,
+            name="7A",
+            is_active=True,
+        )
         self.subject = Subject.objects.create(name="Fikih", code="FK", category=Subject.Category.RELIGION)
         self.client.force_login(self.operator)
 
     def test_teacher_edit_page_renders_profile_sections(self):
+        RombelTeachingAssignment.objects.create(
+            study_group=self.study_group,
+            subject=self.subject,
+            teacher=self.teacher,
+            weekly_hours=6,
+            minimum_score=75,
+        )
         response = self.client.get(reverse("teachers:edit", args=[self.teacher.pk]))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Data Diri")
         self.assertContains(response, "Data Pendidikan")
         self.assertContains(response, "Data Pengajar")
+        self.assertContains(response, "7A")
+        self.assertContains(response, "Fikih")
+
+    def test_teaching_assignment_list_uses_rombel_data(self):
+        RombelTeachingAssignment.objects.create(
+            study_group=self.study_group,
+            subject=self.subject,
+            teacher=self.teacher,
+            weekly_hours=6,
+            minimum_score=75,
+        )
+        response = self.client.get(reverse("teachers:teaching_assignments"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mapel diajar per rombel")
+        self.assertContains(response, "7A")
+        self.assertContains(response, "Kelas 7")
 
     def test_teacher_education_add_creates_history(self):
         scan_file = SimpleUploadedFile("ijazah-s1.pdf", b"fake-pdf-data", content_type="application/pdf")

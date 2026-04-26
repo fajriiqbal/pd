@@ -5,7 +5,7 @@ from django.db.models import Count, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from academics.models import ClassSubject
+from academics.models import RombelTeachingAssignment
 
 from .forms import (
     TeacherAdditionalTaskForm,
@@ -31,7 +31,7 @@ from .models import TeacherAdditionalTask, TeacherArchive, TeacherEducationHisto
 def teacher_list(request):
     query = request.GET.get("q", "").strip()
     teachers = TeacherProfile.objects.select_related("user").annotate(
-        active_teaching_count=Count("class_subjects", filter=Q(class_subjects__is_active=True), distinct=True),
+        active_teaching_count=Count("rombel_assignments", filter=Q(rombel_assignments__is_active=True), distinct=True),
         active_task_count=Count("additional_tasks", filter=Q(additional_tasks__is_active=True), distinct=True),
     )
 
@@ -41,7 +41,9 @@ def teacher_list(request):
             | Q(user__username__icontains=query)
             | Q(nip__icontains=query)
             | Q(subject__icontains=query)
-            | Q(class_subjects__subject__name__icontains=query)
+            | Q(rombel_assignments__subject__name__icontains=query)
+            | Q(rombel_assignments__study_group__name__icontains=query)
+            | Q(rombel_assignments__study_group__school_class__name__icontains=query)
             | Q(additional_tasks__name__icontains=query)
         ).distinct()
 
@@ -51,7 +53,7 @@ def teacher_list(request):
         "query": query,
         "import_result": import_result,
         "active_teacher_count": TeacherProfile.objects.filter(is_active=True).count(),
-        "assigned_teacher_count": TeacherProfile.objects.filter(class_subjects__is_active=True).distinct().count(),
+        "assigned_teacher_count": TeacherProfile.objects.filter(rombel_assignments__is_active=True).distinct().count(),
         "active_task_count": TeacherAdditionalTask.objects.filter(is_active=True).count(),
     }
     return render(request, "teachers/teacher_list.html", context)
@@ -60,18 +62,27 @@ def teacher_list(request):
 @login_required
 def teaching_assignment_list(request):
     query = request.GET.get("q", "").strip()
-    assignments = ClassSubject.objects.select_related(
-        "school_class",
+    assignments = RombelTeachingAssignment.objects.select_related(
+        "study_group__academic_year",
+        "study_group__school_class",
         "subject",
         "teacher__user",
-    ).order_by("teacher__user__full_name", "school_class__level_order", "subject__sort_order")
+    ).order_by(
+        "teacher__user__full_name",
+        "study_group__academic_year__start_date",
+        "study_group__school_class__level_order",
+        "study_group__name",
+        "subject__sort_order",
+    )
 
     if query:
         assignments = assignments.filter(
             Q(teacher__user__full_name__icontains=query)
             | Q(subject__name__icontains=query)
             | Q(subject__code__icontains=query)
-            | Q(school_class__name__icontains=query)
+            | Q(study_group__name__icontains=query)
+            | Q(study_group__school_class__name__icontains=query)
+            | Q(study_group__academic_year__name__icontains=query)
         )
 
     active_assignments = assignments.filter(is_active=True)
@@ -100,8 +111,8 @@ def teaching_assignment_create(request):
         {
             "form": form,
             "page_kicker": "Beban Mengajar",
-            "page_title": "Tambah mapel yang diajar",
-            "page_description": "Hubungkan guru dengan mapel, kelas, KKM, dan jumlah jam pelajaran.",
+            "page_title": "Tambah mapel diajar per rombel",
+            "page_description": "Hubungkan guru dengan rombel, mapel, KKM, dan jumlah jam pelajaran.",
             "submit_label": "Simpan pengaturan",
             "cancel_url": "teachers:teaching_assignments",
             "checkbox_fields": ["is_active"],
@@ -111,7 +122,7 @@ def teaching_assignment_create(request):
 
 @login_required
 def teaching_assignment_update(request, pk):
-    assignment = get_object_or_404(ClassSubject, pk=pk)
+    assignment = get_object_or_404(RombelTeachingAssignment, pk=pk)
     form = TeacherTeachingAssignmentForm(request.POST or None, instance=assignment)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -124,8 +135,8 @@ def teaching_assignment_update(request, pk):
         {
             "form": form,
             "page_kicker": "Beban Mengajar",
-            "page_title": f"Edit mapel yang diajar {assignment}",
-            "page_description": "Perbarui guru pengampu, KKM, jam pelajaran, atau status aktif.",
+            "page_title": f"Edit mapel diajar {assignment}",
+            "page_description": "Perbarui guru pengampu, rombel, KKM, jam pelajaran, atau status aktif.",
             "submit_label": "Update pengaturan",
             "cancel_url": "teachers:teaching_assignments",
             "checkbox_fields": ["is_active"],
@@ -135,11 +146,7 @@ def teaching_assignment_update(request, pk):
 
 @login_required
 def teaching_assignment_delete(request, pk):
-    assignment = get_object_or_404(ClassSubject, pk=pk)
-    if assignment.grade_books.exists():
-        messages.error(request, "Pengaturan ini tidak bisa dihapus karena sudah memiliki ledger nilai.")
-        return redirect("teachers:teaching_assignments")
-
+    assignment = get_object_or_404(RombelTeachingAssignment, pk=pk)
     if request.method == "POST":
         assignment.delete()
         messages.success(request, "Pengaturan mapel guru berhasil dihapus.")
@@ -526,10 +533,17 @@ def teacher_update(request, pk):
 
     education_histories = teacher.education_histories.all()
     education_form = TeacherEducationHistoryForm()
-    teaching_assignments = teacher.class_subjects.select_related(
-        "school_class",
+    teaching_assignments = teacher.rombel_assignments.select_related(
+        "study_group__academic_year",
+        "study_group__school_class",
         "subject",
-    ).order_by("school_class__level_order", "subject__sort_order", "subject__name")
+    ).order_by(
+        "study_group__academic_year__start_date",
+        "study_group__school_class__level_order",
+        "study_group__name",
+        "subject__sort_order",
+        "subject__name",
+    )
     additional_tasks = teacher.additional_tasks.order_by("-is_active", "task_type", "name")
     active_teaching = teaching_assignments.filter(is_active=True)
 

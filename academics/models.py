@@ -192,6 +192,46 @@ class ClassSubject(models.Model):
         return f"{self.school_class.name} - {self.subject.name}"
 
 
+class RombelTeachingAssignment(models.Model):
+    study_group = models.ForeignKey(
+        StudyGroup,
+        on_delete=models.CASCADE,
+        related_name="rombel_assignments",
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.CASCADE,
+        related_name="rombel_assignments",
+    )
+    teacher = models.ForeignKey(
+        TeacherProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="rombel_assignments",
+    )
+    minimum_score = models.PositiveSmallIntegerField(default=75)
+    weekly_hours = models.PositiveSmallIntegerField(default=2)
+    is_active = models.BooleanField(default=True)
+    notes = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("study_group__academic_year__start_date", "study_group__school_class__level_order", "study_group__name", "subject__sort_order", "subject__name")
+        verbose_name = "Mapel Diajar per Rombel"
+        verbose_name_plural = "Mapel Diajar per Rombel"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("study_group", "subject"),
+                name="unique_subject_per_study_group",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.study_group.name} - {self.subject.name}"
+
+
 class PbmScheduleSlot(models.Model):
     class DayOfWeek(models.TextChoices):
         MONDAY = "1", "Senin"

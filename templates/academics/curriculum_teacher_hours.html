@@ -3,7 +3,7 @@
 {% block title %}Rekap Jam PBM | PDM{% endblock %}
 {% block page_kicker %}Kurikulum{% endblock %}
 {% block page_title %}Rekap Jam PBM{% endblock %}
-{% block page_description %}Rekap beban jam mengajar guru per mapel dan per kelas untuk mengecek total JTM sebelum jadwal disusun.{% endblock %}
+{% block page_description %}Rekap beban jam mengajar guru per mapel dan per rombel untuk mengecek total JTM sebelum jadwal disusun.{% endblock %}
 
 {% block content %}
 <section class="space-y-6">
@@ -12,7 +12,7 @@
             <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Rekap guru</p>
             <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Total jam mengajar per guru</h2>
             <p class="mt-2 text-sm leading-7 text-slate-500">
-                Halaman ini merangkum mapel per guru, lengkap dengan kelas, KKM, dan jumlah JTM sehingga mudah dicocokkan dengan struktur kurikulum dan jadwal PBM.
+                Halaman ini merangkum mapel per guru, lengkap dengan rombel, KKM, dan jumlah JTM sehingga mudah dicocokkan dengan struktur kurikulum dan jadwal PBM.
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -40,7 +40,7 @@
         <form method="get" class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr_auto]">
             <div>
                 <label class="text-sm font-medium text-slate-700" for="search-teacher">Cari guru/mapel</label>
-                <input id="search-teacher" type="text" name="q" value="{{ query }}" placeholder="Cari nama guru, NIP, mapel, atau kelas" class="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3">
+                <input id="search-teacher" type="text" name="q" value="{{ query }}" placeholder="Cari nama guru, NIP, mapel, atau rombel" class="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3">
             </div>
             <div>
                 <label class="text-sm font-medium text-slate-700" for="filter-class">Kelas</label>
@@ -75,7 +75,7 @@
                             <tr>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">No</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Mata pelajaran</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Kelas</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Rombel</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">KKM</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">JTM</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Paraf</th>
@@ -88,7 +88,10 @@
                                     <td class="px-6 py-4">
                                         <p class="font-semibold text-slate-950">{{ row.subject_name }}</p>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">{{ row.school_class_name }}</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">
+                                        <p class="font-medium text-slate-900">{{ row.study_group_name }}</p>
+                                        <p class="mt-1 text-xs text-slate-400">{{ row.school_class_name }} · {{ row.academic_year_name }}</p>
+                                    </td>
                                     <td class="px-6 py-4 text-sm text-slate-600">{{ row.minimum_score }}</td>
                                     <td class="px-6 py-4 text-sm text-slate-600">{{ row.weekly_hours }}</td>
                                     <td class="px-6 py-4 text-sm text-slate-600">................</td>

@@ -1,5 +1,4 @@
 import random
-import random
 import re
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
@@ -29,7 +28,17 @@ from .forms import (
     StudyGroupForm,
     SubjectForm,
 )
-from .models import AcademicYear, ClassSubject, GradeBook, PbmScheduleSlot, SchoolClass, StudentGrade, StudyGroup, Subject
+from .models import (
+    AcademicYear,
+    ClassSubject,
+    GradeBook,
+    PbmScheduleSlot,
+    RombelTeachingAssignment,
+    SchoolClass,
+    StudentGrade,
+    StudyGroup,
+    Subject,
+)
 
 
 def _sync_grade_book_students(grade_book):
@@ -1063,8 +1072,8 @@ def curriculum_teacher_hours(request):
     school_class_id = request.GET.get("class", "").strip()
 
     teachers = TeacherProfile.objects.select_related("user").annotate(
-        active_assignment_count=Count("class_subjects", filter=Q(class_subjects__is_active=True), distinct=True),
-        total_weekly_hours=Sum("class_subjects__weekly_hours", filter=Q(class_subjects__is_active=True)),
+        active_assignment_count=Count("rombel_assignments", filter=Q(rombel_assignments__is_active=True), distinct=True),
+        total_weekly_hours=Sum("rombel_assignments__weekly_hours", filter=Q(rombel_assignments__is_active=True)),
     ).filter(is_active=True)
 
     if query:
@@ -1073,12 +1082,13 @@ def curriculum_teacher_hours(request):
             | Q(user__username__icontains=query)
             | Q(nip__icontains=query)
             | Q(subject__icontains=query)
-            | Q(class_subjects__subject__name__icontains=query)
-            | Q(class_subjects__school_class__name__icontains=query)
+            | Q(rombel_assignments__subject__name__icontains=query)
+            | Q(rombel_assignments__study_group__name__icontains=query)
+            | Q(rombel_assignments__study_group__school_class__name__icontains=query)
         ).distinct()
 
     if school_class_id:
-        teachers = teachers.filter(class_subjects__school_class_id=school_class_id)
+        teachers = teachers.filter(rombel_assignments__study_group__school_class_id=school_class_id)
 
     teachers = teachers.distinct()
     teachers = teachers.order_by("user__full_name")
@@ -1086,9 +1096,15 @@ def curriculum_teacher_hours(request):
     grouped_rows = []
     for teacher in teachers:
         assignments = list(
-            teacher.class_subjects.select_related("school_class", "subject")
+            teacher.rombel_assignments.select_related("study_group__academic_year", "study_group__school_class", "subject")
             .filter(is_active=True)
-            .order_by("school_class__level_order", "subject__sort_order", "subject__name")
+            .order_by(
+                "study_group__academic_year__start_date",
+                "study_group__school_class__level_order",
+                "study_group__name",
+                "subject__sort_order",
+                "subject__name",
+            )
         )
         if not assignments:
             continue
@@ -1097,7 +1113,9 @@ def curriculum_teacher_hours(request):
         for assignment in assignments:
             assignment_rows.append(
                 {
-                    "school_class_name": assignment.school_class.name,
+                    "study_group_name": assignment.study_group.name,
+                    "school_class_name": assignment.study_group.school_class.name,
+                    "academic_year_name": assignment.study_group.academic_year.name,
                     "subject_name": assignment.subject.name,
                     "weekly_hours": assignment.weekly_hours,
                     "minimum_score": assignment.minimum_score,

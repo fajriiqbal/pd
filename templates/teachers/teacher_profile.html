@@ -3,7 +3,7 @@
 {% block title %}Profil Guru | PDM{% endblock %}
 {% block page_kicker %}Modul Guru{% endblock %}
 {% block page_title %}Profil guru {{ teacher.user.full_name }}{% endblock %}
-{% block page_description %}Kelola data diri, riwayat pendidikan, dan data pengajar dari satu halaman monitoring operator.{% endblock %}
+{% block page_description %}Kelola data diri, riwayat pendidikan, dan data pengajar per rombel dari satu halaman monitoring operator. Data kelas lama tetap ada di menu kurikulum sebagai referensi.{% endblock %}
 
 {% block content %}
 <section class="space-y-6">
@@ -45,7 +45,7 @@
             <p class="mt-3 text-lg font-semibold tracking-tight text-slate-950">{{ teacher.user.username }}</p>
         </article>
         <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
-            <p class="text-sm text-slate-500">Mapel aktif</p>
+            <p class="text-sm text-slate-500">Rombel/mapel aktif</p>
             <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ teaching_assignment_count }}</p>
         </article>
         <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
@@ -272,10 +272,10 @@
         <div class="mb-4 flex items-center justify-between">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-700">Data Pengajar</p>
-                <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Mapel yang diampu dan kelas</h2>
+                <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Mapel yang diampu dan rombel</h2>
             </div>
             <a href="{% url 'teachers:teaching_assignments' %}?q={{ teacher.user.full_name|urlencode }}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                Kelola mapel guru
+                Kelola mapel rombel
             </a>
         </div>
 
@@ -284,7 +284,7 @@
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Kelas</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Rombel</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Mapel</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">KKM</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">JTM</th>
@@ -295,7 +295,10 @@
                     <tbody class="divide-y divide-slate-100">
                         {% for item in teaching_assignments %}
                             <tr class="hover:bg-slate-50">
-                                <td class="px-6 py-4 text-slate-700">{{ item.school_class.name }}</td>
+                                <td class="px-6 py-4 text-slate-700">
+                                    <p class="font-medium text-slate-900">{{ item.study_group.name }}</p>
+                                    <p class="mt-1 text-xs text-slate-400">{{ item.study_group.school_class.name }} · {{ item.study_group.academic_year.name }}</p>
+                                </td>
                                 <td class="px-6 py-4">
                                     <p class="font-medium text-slate-900">{{ item.subject.name }}</p>
                                     <p class="text-xs text-slate-400">{{ item.subject.get_curriculum_display }}</p>

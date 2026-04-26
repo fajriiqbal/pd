@@ -1,6 +1,16 @@
 from django.contrib import admin
 
-from .models import AcademicYear, ClassSubject, GradeBook, PbmScheduleSlot, SchoolClass, StudentGrade, StudyGroup, Subject
+from .models import (
+    AcademicYear,
+    ClassSubject,
+    GradeBook,
+    PbmScheduleSlot,
+    RombelTeachingAssignment,
+    SchoolClass,
+    StudentGrade,
+    StudyGroup,
+    Subject,
+)
 
 
 @admin.register(AcademicYear)
@@ -45,6 +55,14 @@ class ClassSubjectAdmin(admin.ModelAdmin):
     list_filter = ("school_class", "subject__curriculum", "subject__category", "is_active")
     search_fields = ("school_class__name", "subject__name", "teacher__user__full_name")
     autocomplete_fields = ("school_class", "subject", "teacher")
+
+
+@admin.register(RombelTeachingAssignment)
+class RombelTeachingAssignmentAdmin(admin.ModelAdmin):
+    list_display = ("study_group", "subject", "teacher", "minimum_score", "weekly_hours", "is_active")
+    list_filter = ("study_group__academic_year", "study_group__school_class", "subject__curriculum", "is_active")
+    search_fields = ("study_group__name", "study_group__school_class__name", "subject__name", "teacher__user__full_name")
+    autocomplete_fields = ("study_group", "subject", "teacher")
 
 
 @admin.register(PbmScheduleSlot)

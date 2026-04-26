@@ -4,12 +4,26 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import CustomUser
+from institution.models import SchoolIdentity
 from teachers.models import TeacherProfile
 from students.models import StudentProfile
 
 
 class DashboardViewTests(TestCase):
     def setUp(self):
+        SchoolIdentity.objects.update_or_create(
+            pk=1,
+            defaults={
+                "institution_name": "MTs Sunan Kalijaga",
+                "npsn": "12345678",
+                "address": "Jl. Pendidikan No. 1",
+                "district": "Kedungwaru",
+                "regency": "Tulungagung",
+                "province": "Jawa Timur",
+                "principal_name": "Ahmad Suyuti",
+                "principal_nip": "197001012000031001",
+            },
+        )
         self.user = CustomUser.objects.create_user(
             username="operator-dashboard",
             password="rahasia123",

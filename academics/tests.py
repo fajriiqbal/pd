@@ -9,11 +9,24 @@ from students.models import StudentProfile
 from teachers.models import TeacherProfile
 from institution.models import SchoolIdentity
 
-from .models import AcademicYear, ClassSubject, GradeBook, PbmScheduleSlot, StudentGrade, SchoolClass, StudyGroup, Subject
+from .models import AcademicYear, ClassSubject, GradeBook, PbmScheduleSlot, RombelTeachingAssignment, StudentGrade, SchoolClass, StudyGroup, Subject
 
 
 class AcademicDetailViewTests(TestCase):
     def setUp(self):
+        SchoolIdentity.objects.update_or_create(
+            pk=1,
+            defaults={
+                "institution_name": "MTs Sunan Kalijaga",
+                "npsn": "12345678",
+                "address": "Jl. Pendidikan No. 1",
+                "district": "Kedungwaru",
+                "regency": "Tulungagung",
+                "province": "Jawa Timur",
+                "principal_name": "Ahmad Suyuti",
+                "principal_nip": "197001012000031001",
+            },
+        )
         self.operator = CustomUser.objects.create_user(
             username="operator-akademik",
             password="rahasia123",
@@ -21,17 +34,6 @@ class AcademicDetailViewTests(TestCase):
             role=CustomUser.Role.ADMIN,
         )
         self.client.force_login(self.operator)
-
-        SchoolIdentity.objects.create(
-            institution_name="MTs Sunan Kalijaga",
-            npsn="12345678",
-            address="Jl. Pendidikan No. 1",
-            district="Kedungwaru",
-            regency="Tulungagung",
-            province="Jawa Timur",
-            principal_name="Ahmad Suyuti",
-            principal_nip="197001012000031001",
-        )
 
         self.academic_year = AcademicYear.objects.create(
             name="2025/2026",
@@ -413,15 +415,15 @@ class AcademicDetailViewTests(TestCase):
     def test_curriculum_teacher_hours_page_lists_teacher_totals(self):
         subject_a = Subject.objects.create(name="Matematika", code="MTK", category=Subject.Category.GENERAL)
         subject_b = Subject.objects.create(name="IPA", code="IPA", category=Subject.Category.GENERAL)
-        ClassSubject.objects.create(
-            school_class=self.school_class,
+        RombelTeachingAssignment.objects.create(
+            study_group=self.study_group,
             subject=subject_a,
             teacher=self.homeroom_teacher,
             minimum_score=75,
             weekly_hours=4,
         )
-        ClassSubject.objects.create(
-            school_class=self.school_class,
+        RombelTeachingAssignment.objects.create(
+            study_group=self.study_group,
             subject=subject_b,
             teacher=self.homeroom_teacher,
             minimum_score=75,

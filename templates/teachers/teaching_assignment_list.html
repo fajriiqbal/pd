@@ -2,8 +2,8 @@
 
 {% block title %}Mapel Yang Diajar | PDM{% endblock %}
 {% block page_kicker %}Modul Guru{% endblock %}
-{% block page_title %}Mapel yang diajar{% endblock %}
-{% block page_description %}Atur guru pengampu per kelas dan mata pelajaran sebagai dasar jadwal, ledger nilai, dan raport.{% endblock %}
+{% block page_title %}Mapel diajar per rombel{% endblock %}
+{% block page_description %}Atur guru pengampu per rombel dan mata pelajaran sebagai dasar jadwal, ledger nilai, dan raport. Data kelas lama tetap tersimpan di menu kurikulum sebagai referensi.{% endblock %}
 
 {% block content %}
 <section class="space-y-6">
@@ -32,7 +32,7 @@
         <div class="max-w-2xl">
             <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Beban Mengajar</p>
             <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Pengaturan guru pengampu</h2>
-            <p class="mt-2 text-sm text-slate-500">Satu baris mewakili satu mapel pada satu kelas. Data ini juga dipakai modul akademik.</p>
+            <p class="mt-2 text-sm text-slate-500">Satu baris mewakili satu mapel pada satu rombel. Data ini juga dipakai modul akademik.</p>
         </div>
         <div class="w-full space-y-3 lg:max-w-xl">
             <form method="get">
@@ -42,7 +42,7 @@
                     type="text"
                     name="q"
                     value="{{ query }}"
-                    placeholder="Cari guru, mapel, kode, atau kelas"
+                    placeholder="Cari guru, mapel, kode, atau rombel"
                     class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-brand-500 focus:outline-none"
                 >
             </form>
@@ -58,7 +58,7 @@
                 <thead class="bg-slate-50">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Guru</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Kelas</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Rombel</th>
                         <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Mapel</th>
                         <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">KKM/JTM</th>
                         <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Status</th>
@@ -72,7 +72,10 @@
                                 <p class="font-semibold text-slate-900">{{ item.teacher.user.full_name|default:"Belum ditentukan" }}</p>
                                 <p class="mt-1 text-sm text-slate-500">{{ item.teacher.nip|default:"NIP belum diisi" }}</p>
                             </td>
-                            <td class="px-6 py-4 text-slate-600">{{ item.school_class.name }}</td>
+                            <td class="px-6 py-4 text-slate-600">
+                                <p class="font-medium text-slate-900">{{ item.study_group.name }}</p>
+                                <p class="mt-1 text-xs text-slate-400">{{ item.study_group.school_class.name }} · {{ item.study_group.academic_year.name }}</p>
+                            </td>
                             <td class="px-6 py-4">
                                 <p class="font-medium text-slate-900">{{ item.subject.name }}</p>
                                 <p class="mt-1 text-xs text-slate-400">{{ item.subject.code|default:"Tanpa kode" }} - {{ item.subject.get_curriculum_display }}</p>

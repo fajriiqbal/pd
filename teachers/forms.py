@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from accounts.models import CustomUser
-from academics.models import ClassSubject, SchoolClass, Subject
+from academics.models import RombelTeachingAssignment, StudyGroup, Subject
 
 from .models import TeacherAdditionalTask, TeacherArchive, TeacherEducationHistory, TeacherMutationRecord, TeacherProfile
 
@@ -202,11 +202,20 @@ class TeacherAdditionalTaskForm(forms.ModelForm):
 
 class TeacherTeachingAssignmentForm(forms.ModelForm):
     class Meta:
-        model = ClassSubject
-        fields = ["teacher", "school_class", "subject", "minimum_score", "weekly_hours", "notes", "is_active"]
+        model = RombelTeachingAssignment
+        fields = ["teacher", "study_group", "subject", "minimum_score", "weekly_hours", "notes", "is_active"]
+        labels = {
+            "teacher": "Guru pengampu",
+            "study_group": "Rombel",
+            "subject": "Mata pelajaran",
+            "minimum_score": "KKM",
+            "weekly_hours": "JTM per minggu",
+            "notes": "Catatan",
+            "is_active": "Aktif",
+        }
         widgets = {
             "teacher": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
-            "school_class": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+            "study_group": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
             "subject": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
             "minimum_score": forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 0, "max": 100}),
             "weekly_hours": forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 0}),
@@ -220,8 +229,11 @@ class TeacherTeachingAssignmentForm(forms.ModelForm):
         self.fields["teacher"].queryset = TeacherProfile.objects.select_related("user").filter(
             is_active=True
         ).order_by("user__full_name")
-        self.fields["school_class"].queryset = SchoolClass.objects.filter(is_active=True).order_by(
-            "level_order",
+        self.fields["study_group"].queryset = StudyGroup.objects.select_related("academic_year", "school_class").filter(
+            is_active=True
+        ).order_by(
+            "-academic_year__start_date",
+            "school_class__level_order",
             "name",
         )
         self.fields["subject"].queryset = Subject.objects.filter(is_active=True).order_by(
