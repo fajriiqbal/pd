@@ -251,7 +251,7 @@ def curriculum_dashboard(request):
         {
             "title": "Struktur kurikulum",
             "description": "Hubungkan mapel dengan kelas, guru pengampu, KKM, dan jam pelajaran.",
-            "url": "academics:subject_list",
+            "url": "academics:curriculum_structure",
         },
         {
             "title": "Beban guru",
@@ -277,6 +277,46 @@ def curriculum_dashboard(request):
         "total_weekly_hours": ClassSubject.objects.filter(is_active=True).aggregate(total=Sum("weekly_hours"))["total"] or 0,
     }
     return render(request, "academics/curriculum_dashboard.html", context)
+
+
+@login_required
+def curriculum_structure(request):
+    query = request.GET.get("q", "").strip()
+    class_subject_qs = (
+        ClassSubject.objects.select_related("subject", "teacher__user")
+        .filter(is_active=True)
+        .order_by("subject__sort_order", "subject__name")
+    )
+    classes = (
+        SchoolClass.objects.annotate(
+            active_group_count=Count("study_groups", filter=Q(study_groups__is_active=True), distinct=True),
+            active_class_subject_count=Count("class_subjects", filter=Q(class_subjects__is_active=True), distinct=True),
+            total_weekly_hours=Sum("class_subjects__weekly_hours", filter=Q(class_subjects__is_active=True)),
+        )
+        .prefetch_related(Prefetch("class_subjects", queryset=class_subject_qs))
+        .order_by("level_order", "name")
+    )
+
+    if query:
+        classes = classes.filter(
+            Q(name__icontains=query)
+            | Q(description__icontains=query)
+            | Q(class_subjects__subject__name__icontains=query)
+            | Q(class_subjects__teacher__user__full_name__icontains=query)
+        ).distinct()
+
+    return render(
+        request,
+        "academics/curriculum_structure.html",
+        {
+            "query": query,
+            "classes": classes,
+            "class_count": SchoolClass.objects.filter(is_active=True).count(),
+            "class_subject_count": ClassSubject.objects.filter(is_active=True).count(),
+            "teacher_count": ClassSubject.objects.filter(is_active=True, teacher__isnull=False).values("teacher").distinct().count(),
+            "total_weekly_hours": ClassSubject.objects.filter(is_active=True).aggregate(total=Sum("weekly_hours"))["total"] or 0,
+        },
+    )
 
 
 @login_required

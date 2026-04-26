@@ -7,6 +7,7 @@ app_name = "academics"
 urlpatterns = [
     path("", views.overview, name="overview"),
     path("curriculum/", views.curriculum_dashboard, name="curriculum"),
+    path("curriculum/structure/", views.curriculum_structure, name="curriculum_structure"),
     path("years/", views.year_list, name="year_list"),
     path("years/add/", views.academic_year_create, name="year_add"),
     path("years/<int:pk>/edit/", views.academic_year_update, name="year_edit"),

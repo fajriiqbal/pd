@@ -225,6 +225,24 @@ class AcademicDetailViewTests(TestCase):
         self.assertContains(response, "Matematika")
         self.assertContains(response, "Beban guru")
 
+    def test_curriculum_structure_page_lists_subject_rows(self):
+        subject = Subject.objects.create(name="IPA", code="IPA", category=Subject.Category.GENERAL)
+        ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject,
+            teacher=self.homeroom_teacher,
+            minimum_score=78,
+            weekly_hours=4,
+        )
+
+        response = self.client.get(reverse("academics:curriculum_structure"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Struktur Kurikulum")
+        self.assertContains(response, "IPA")
+        self.assertContains(response, "Guru Wali")
+        self.assertContains(response, "78")
+
     def test_new_academic_year_can_clone_previous_study_groups(self):
         target_school_class = SchoolClass.objects.create(name="Kelas 8", level_order=8)
 
