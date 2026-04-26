@@ -349,14 +349,36 @@ class StudentAlumniValidationForm(forms.ModelForm):
         model = StudentAlumniValidation
         fields = [
             "government_name",
+            "government_nisn",
+            "government_birth_date",
+            "government_father_name",
             "diploma_name",
             "family_card_name",
             "birth_certificate_name",
             "notes",
         ]
+        labels = {
+            "government_name": "Nama sistem",
+            "government_nisn": "NISN sistem",
+            "government_birth_date": "Tanggal lahir sistem",
+            "government_father_name": "Nama ayah sistem",
+            "diploma_name": "Nama ijazah",
+            "family_card_name": "Nama KK",
+            "birth_certificate_name": "Nama akta",
+            "notes": "Catatan",
+        }
         widgets = {
             "government_name": forms.TextInput(
                 attrs={"class": BASE_INPUT_CLASS, "placeholder": "Nama dari sistem pemerintah / referensi resmi"}
+            ),
+            "government_nisn": forms.TextInput(
+                attrs={"class": BASE_INPUT_CLASS, "placeholder": "NISN dari sistem"}
+            ),
+            "government_birth_date": forms.DateInput(
+                attrs={"class": BASE_INPUT_CLASS, "type": "date"}
+            ),
+            "government_father_name": forms.TextInput(
+                attrs={"class": BASE_INPUT_CLASS, "placeholder": "Nama ayah dari sistem"}
             ),
             "diploma_name": forms.TextInput(
                 attrs={"class": BASE_INPUT_CLASS, "placeholder": "Nama pada ijazah"}

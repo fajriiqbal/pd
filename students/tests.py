@@ -621,6 +621,8 @@ class StudentListAndBulkDeleteTests(TestCase):
             full_name=self.student_7a.user.full_name,
             nis=self.student_7a.nis or "",
             nisn=self.student_7a.nisn or "",
+            birth_date=self.student_7a.birth_date,
+            father_name=self.student_7a.father_name,
             gender=self.student_7a.gender,
             class_name=self.student_7a.class_name,
             entry_year=self.student_7a.entry_year,
@@ -630,10 +632,13 @@ class StudentListAndBulkDeleteTests(TestCase):
         response = self.client.post(
             reverse("students:alumni_validation_update", args=[alumni.pk]),
             {
-                "government_name": "Siswa Kelas Tujuh",
-                "diploma_name": "Siswa Kelas Tujuh",
-                "family_card_name": "Siswa Kelas Tujuh",
-                "birth_certificate_name": "Siswa Kelas Tujuh",
+                "government_name": alumni.full_name,
+                "government_nisn": alumni.nisn or "",
+                "government_birth_date": alumni.birth_date.strftime("%Y-%m-%d") if alumni.birth_date else "",
+                "government_father_name": alumni.father_name or "",
+                "diploma_name": alumni.full_name,
+                "family_card_name": alumni.full_name,
+                "birth_certificate_name": alumni.full_name,
                 "notes": "Semua identik",
             },
         )
@@ -641,6 +646,8 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertRedirects(response, reverse("students:alumni_detail", args=[alumni.pk]))
         validation = StudentAlumniValidation.objects.get(alumni=alumni)
         self.assertEqual(validation.status, StudentAlumniValidation.Status.MATCH)
+        self.assertEqual(validation.government_nisn, alumni.nisn or "")
+        self.assertEqual(validation.government_father_name, alumni.father_name or "")
 
         list_response = self.client.get(reverse("students:alumni_validation_list"))
         self.assertEqual(list_response.status_code, 200)
@@ -738,6 +745,19 @@ class StudentBackupRestoreTests(TestCase):
             role=CustomUser.Role.ADMIN,
         )
         self.client.force_login(self.operator)
+        SchoolIdentity.objects.update_or_create(
+            pk=1,
+            defaults={
+                "institution_name": "MTs Sunan Kalijaga",
+                "npsn": "12345678",
+                "address": "Jl. Raya",
+                "district": "Tulung",
+                "regency": "Tulung",
+                "province": "Jawa Tengah",
+                "principal_name": "Kepala",
+                "principal_nip": "197001011999031001",
+            },
+        )
 
         self.academic_year = AcademicYear.objects.create(
             name="2025/2026",

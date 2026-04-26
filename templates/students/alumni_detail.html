@@ -78,8 +78,8 @@
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Validasi ijazah</p>
-                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Pencocokan nama dan dokumen</h2>
-                <p class="mt-2 text-sm text-slate-500">Cocokkan nama dari sistem pemerintah, ijazah, KK, dan akta. Kalau ada beda ejaan, operator bisa catat di sini.</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Pencocokan data sistem</h2>
+                <p class="mt-2 text-sm text-slate-500">Cocokkan nama, NISN, tanggal lahir, dan nama ayah dari sistem agar arsip alumni lebih aman dipakai.</p>
             </div>
             <a href="{% url 'students:alumni_validation_update' alumni.pk %}" class="rounded-2xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800">
                 Buka form validasi
@@ -89,20 +89,20 @@
         {% if alumni.validation %}
             <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <div class="rounded-2xl bg-slate-50 px-4 py-4">
-                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Nama sistem</p>
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Nama</p>
                     <p class="mt-2 font-semibold text-slate-900">{{ alumni.validation.government_name|default:"-" }}</p>
                 </div>
                 <div class="rounded-2xl bg-slate-50 px-4 py-4">
-                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Nama ijazah</p>
-                    <p class="mt-2 font-semibold text-slate-900">{{ alumni.validation.diploma_name|default:"-" }}</p>
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">NISN</p>
+                    <p class="mt-2 font-semibold text-slate-900">{{ alumni.validation.government_nisn|default:"-" }}</p>
                 </div>
                 <div class="rounded-2xl bg-slate-50 px-4 py-4">
-                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Nama KK</p>
-                    <p class="mt-2 font-semibold text-slate-900">{{ alumni.validation.family_card_name|default:"-" }}</p>
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Tanggal lahir</p>
+                    <p class="mt-2 font-semibold text-slate-900">{% if alumni.validation.government_birth_date %}{{ alumni.validation.government_birth_date|date:"d M Y" }}{% else %}-{% endif %}</p>
                 </div>
                 <div class="rounded-2xl bg-slate-50 px-4 py-4">
-                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Nama akta</p>
-                    <p class="mt-2 font-semibold text-slate-900">{{ alumni.validation.birth_certificate_name|default:"-" }}</p>
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Nama ayah</p>
+                    <p class="mt-2 font-semibold text-slate-900">{{ alumni.validation.government_father_name|default:"-" }}</p>
                 </div>
             </div>
             <div class="mt-4 flex flex-wrap items-center gap-3">

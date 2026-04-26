@@ -207,6 +207,21 @@ class StudentAlumniValidation(models.Model):
         blank=True,
         help_text="Nama sesuai sistem pemerintah atau data referensi resmi.",
     )
+    government_nisn = models.CharField(
+        max_length=30,
+        blank=True,
+        help_text="NISN sesuai data sistem yang dijadikan pembanding.",
+    )
+    government_birth_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Tanggal lahir sesuai data sistem yang dijadikan pembanding.",
+    )
+    government_father_name = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Nama ayah sesuai data sistem yang dijadikan pembanding.",
+    )
     diploma_name = models.CharField(max_length=150, blank=True)
     family_card_name = models.CharField(max_length=150, blank=True)
     birth_certificate_name = models.CharField(max_length=150, blank=True)
@@ -236,26 +251,32 @@ class StudentAlumniValidation(models.Model):
         return " ".join((value or "").split()).strip().casefold()
 
     def calculate_status(self) -> str:
-        names = [
+        reference_values = [
             self.government_name,
-            self.diploma_name,
-            self.family_card_name,
-            self.birth_certificate_name,
+            self.government_nisn,
+            self.government_birth_date,
+            self.government_father_name,
         ]
-        filled = [name for name in names if name.strip()]
-        if not filled:
+        if not any(value for value in reference_values):
             return self.Status.PENDING
 
-        normalized = {self.normalize_name(name) for name in filled}
-        if len(normalized) == 1:
+        checks = [
+            self.normalize_name(self.government_name) == self.normalize_name(self.alumni.full_name),
+            self.normalize_name(self.government_nisn) == self.normalize_name(self.alumni.nisn),
+            self.government_birth_date == self.alumni.birth_date,
+            self.normalize_name(self.government_father_name) == self.normalize_name(self.alumni.father_name),
+        ]
+
+        if all(checks):
             return self.Status.MATCH
-        if self.government_name and self.diploma_name and self.normalize_name(self.government_name) != self.normalize_name(self.diploma_name):
+
+        if not checks[0] or not checks[1]:
             return self.Status.MISMATCH
+
         return self.Status.REVIEW
 
     def save(self, *args, **kwargs):
-        if self.status == self.Status.PENDING:
-            self.status = self.calculate_status()
+        self.status = self.calculate_status()
         super().save(*args, **kwargs)
 
 

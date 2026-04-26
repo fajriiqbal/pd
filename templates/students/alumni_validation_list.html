@@ -3,7 +3,7 @@
 {% block title %}Validasi Ijazah | PDM{% endblock %}
 {% block page_kicker %}Data Siswa{% endblock %}
 {% block page_title %}Validasi ijazah alumni{% endblock %}
-{% block page_description %}Daftar arsip alumni yang perlu dicocokkan antara sistem pemerintah, ijazah, KK, dan akta.{% endblock %}
+{% block page_description %}Daftar arsip alumni yang perlu dicocokkan berdasarkan nama, NISN, tanggal lahir, dan nama ayah dari sistem.{% endblock %}
 
 {% block content %}
 <section class="space-y-6">
@@ -52,7 +52,7 @@
                 <thead class="bg-slate-50">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Alumni</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Pencocokan</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Data sistem</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Validasi</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Aksi</th>
                     </tr>
@@ -66,9 +66,10 @@
                                 <p class="mt-1 text-sm text-slate-500">NIS {{ alumni.nis|default:"-" }} · NISN {{ alumni.nisn|default:"-" }}</p>
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-600">
-                                <p>Ijazah: {{ validation.diploma_name|default:"-" }}</p>
-                                <p class="mt-1">KK: {{ validation.family_card_name|default:"-" }}</p>
-                                <p class="mt-1">Akta: {{ validation.birth_certificate_name|default:"-" }}</p>
+                                <p>Nama: {{ validation.government_name|default:"-" }}</p>
+                                <p class="mt-1">NISN: {{ validation.government_nisn|default:"-" }}</p>
+                                <p class="mt-1">Tanggal lahir: {% if validation.government_birth_date %}{{ validation.government_birth_date|date:"d M Y" }}{% else %}-{% endif %}</p>
+                                <p class="mt-1">Nama ayah: {{ validation.government_father_name|default:"-" }}</p>
                             </td>
                             <td class="px-6 py-4">
                                 {% if validation and validation.status == "match" %}

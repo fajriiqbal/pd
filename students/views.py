@@ -894,7 +894,15 @@ def alumni_validation_update(request, pk):
         validation = alumni.validation
     except StudentAlumniValidation.DoesNotExist:
         validation = None
-    form = StudentAlumniValidationForm(request.POST or None, instance=validation)
+    initial = {}
+    if validation is None:
+        initial = {
+            "government_name": alumni.full_name,
+            "government_nisn": alumni.nisn or "",
+            "government_birth_date": alumni.birth_date,
+            "government_father_name": alumni.father_name or "",
+        }
+    form = StudentAlumniValidationForm(request.POST or None, instance=validation, initial=initial)
 
     if request.method == "POST" and form.is_valid():
         record = form.save(commit=False)
@@ -914,7 +922,7 @@ def alumni_validation_update(request, pk):
             "alumni": alumni,
             "page_kicker": "Validasi Alumni",
             "page_title": f"Validasi ijazah {alumni.full_name}",
-            "page_description": "Cocokkan nama pada sistem pemerintah, ijazah, KK, dan akta sebelum arsip ditetapkan selesai.",
+            "page_description": "Cocokkan nama, NISN, tanggal lahir, dan nama ayah dari sistem dengan arsip sebelum data ditetapkan selesai.",
             "submit_label": "Simpan validasi",
         },
     )
