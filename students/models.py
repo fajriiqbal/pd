@@ -76,14 +76,6 @@ class StudentProfile(models.Model):
         super().save(*args, **kwargs)
 
     def _effective_entry_year(self) -> int | None:
-        if self.study_group_id and self.study_group and self.study_group.school_class_id:
-            level_order = self.study_group.school_class.level_order
-            academic_year = getattr(self.study_group, "academic_year", None)
-            base_year = int(str(academic_year.start_date)[:4]) if academic_year and academic_year.start_date else None
-
-            if base_year and 7 <= level_order <= 9:
-                return base_year - max(level_order - 7, 0)
-
         return self.entry_year or None
 
     def _generate_nis(self) -> str | None:

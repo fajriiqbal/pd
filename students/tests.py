@@ -238,6 +238,11 @@ class StudentListAndBulkDeleteTests(TestCase):
             full_name=full_name,
             role=CustomUser.Role.STUDENT,
         )
+        level_to_entry_year = {
+            7: 2025,
+            8: 2024,
+            9: 2023,
+        }
         return StudentProfile.objects.create(
             user=user,
             nis=nis,
@@ -245,7 +250,7 @@ class StudentListAndBulkDeleteTests(TestCase):
             gender=StudentProfile.Gender.MALE,
             class_name=study_group.name,
             study_group=study_group,
-            entry_year=2025,
+            entry_year=level_to_entry_year.get(study_group.school_class.level_order, 2025),
             is_active=is_active,
         )
 
@@ -265,6 +270,7 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertTrue(self.student_8a_without_nis.nis)
         self.assertTrue(self.student_8a_without_nis.nis.startswith("MTs12345624"))
         self.assertEqual(len(self.student_8a_without_nis.nis), len("MTs12345624") + 4)
+        self.assertEqual(self.student_8a_without_nis.entry_year, 2024)
 
     def test_student_list_rombel_options_follow_selected_class_and_show_student_totals(self):
         group_7b = StudyGroup.objects.create(

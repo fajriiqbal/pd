@@ -180,6 +180,17 @@ def _infer_level_order(class_name):
     return 99
 
 
+def _infer_entry_year_from_school_class(class_name, active_year):
+    if not active_year or not getattr(active_year, "start_date", None):
+        return None
+
+    start_year = active_year.start_date.year
+    level_order = _infer_level_order(class_name)
+    if 7 <= level_order <= 9:
+        return start_year - max(level_order - 7, 0)
+    return start_year
+
+
 def _generate_unique_username(preferred):
     base = _clean_text(preferred).lower().replace(" ", "")
     base = re.sub(r"[^a-z0-9._-]", "", base) or "siswa"
@@ -419,7 +430,7 @@ def build_student_import_preview(uploaded_file, default_password):
                     "study_group_name": study_group_name,
                     "group_label": group_label,
                     "is_active": is_active,
-                    "entry_year": active_year.start_date.year,
+                    "entry_year": _infer_entry_year_from_school_class(school_class_name, active_year),
                 }
             )
 
