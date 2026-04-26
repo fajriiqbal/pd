@@ -6,7 +6,11 @@
 <section class="paper print-paper">
     <div class="print-header">
         <div class="brand-line">
-            <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
+            {% if request.school_identity and request.school_identity.logo %}
+                <img src="{{ request.school_identity.logo.url }}" alt="{{ request.school_identity.institution_name }}" class="brand-mark">
+            {% else %}
+                <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
+            {% endif %}
             <div>
                 <h1 class="paper-title">DAFTAR HADIR UJIAN</h1>
                 <p class="paper-subtitle">{{ request.school_identity.institution_name|default:"PDM" }}</p>

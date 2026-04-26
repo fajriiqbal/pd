@@ -246,7 +246,11 @@
                 {% for card in page_cards %}
                     <article class="student-card">
                         <div class="school-header">
-                            <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
+                            {% if school_identity and school_identity.logo %}
+                                <img src="{{ school_identity.logo.url }}" alt="{{ school_identity.institution_name }}" class="brand-mark">
+                            {% else %}
+                                <img src="/static/img/madrasah-logo.svg" alt="Logo" class="brand-mark">
+                            {% endif %}
                             <div class="header-text">
                                 <h1 class="school-name">{{ school_identity.institution_name|default:"PDM" }}</h1>
                                 <p class="school-address">{{ school_identity.full_address|default:"Alamat madrasah" }}</p>

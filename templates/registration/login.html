@@ -19,7 +19,11 @@
                 <div class="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
                 <div class="relative z-10">
                     <div class="flex items-center gap-4">
-                        <img src="/static/img/madrasah-logo.svg" alt="Logo PDM" class="brand-mark brand-mark-large">
+                        {% if request.school_identity and request.school_identity.logo %}
+                            <img src="{{ request.school_identity.logo.url }}" alt="{{ request.school_identity.institution_name }}" class="brand-mark brand-mark-large rounded-xl object-contain bg-white">
+                        {% else %}
+                            <img src="/static/img/madrasah-logo.svg" alt="Logo PDM" class="brand-mark brand-mark-large">
+                        {% endif %}
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200">PDM</p>
                             <p class="mt-1 text-sm text-slate-300">Panel PDM yang rapi dan responsif</p>
@@ -41,7 +45,11 @@
 
             <section class="p-8 md:p-10">
                 <div class="flex items-center gap-4">
-                    <img src="/static/img/madrasah-logo.svg" alt="Logo PDM" class="brand-mark">
+                    {% if request.school_identity and request.school_identity.logo %}
+                        <img src="{{ request.school_identity.logo.url }}" alt="{{ request.school_identity.institution_name }}" class="brand-mark rounded-xl object-contain bg-white">
+                    {% else %}
+                        <img src="/static/img/madrasah-logo.svg" alt="Logo PDM" class="brand-mark">
+                    {% endif %}
                     <div>
                         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">Masuk PDM</p>
                         <h2 class="mt-1 text-3xl font-black text-slate-900">Selamat datang kembali</h2>
