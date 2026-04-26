@@ -274,7 +274,7 @@
                 <p class="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-700">Data Pengajar</p>
                 <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Mapel yang diampu dan rombel</h2>
             </div>
-            <a href="{% url 'teachers:teaching_assignments' %}?q={{ teacher.user.full_name|urlencode }}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+            <a href="{% url 'teachers:teaching_assignments' %}?teacher={{ teacher.pk }}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
                 Kelola mapel rombel
             </a>
         </div>
@@ -313,7 +313,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4">
-                                    <a href="{% url 'teachers:teaching_assignment_edit' item.pk %}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-white">Edit</a>
+                                    <a href="{% url 'teachers:teaching_assignment_edit' item.pk %}?teacher={{ teacher.pk }}" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-white">Edit</a>
                                 </td>
                             </tr>
                         {% empty %}

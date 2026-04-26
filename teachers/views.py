@@ -4,6 +4,9 @@ from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from itertools import groupby
+from urllib.parse import urlencode
 
 from academics.models import RombelTeachingAssignment
 
@@ -25,6 +28,24 @@ from .import_utils import (
 )
 from .reference import search_school_reference
 from .models import TeacherAdditionalTask, TeacherArchive, TeacherEducationHistory, TeacherMutationRecord, TeacherProfile
+
+
+def _teaching_assignment_context_params(request):
+    params = {}
+    teacher_id = request.GET.get("teacher", "").strip() or request.POST.get("teacher_filter", "").strip()
+    query = request.GET.get("q", "").strip() or request.POST.get("q", "").strip()
+
+    if teacher_id:
+        params["teacher"] = teacher_id
+    if query:
+        params["q"] = query
+    return params
+
+
+def _teaching_assignment_return_url(request):
+    params = _teaching_assignment_context_params(request)
+    base_url = reverse("teachers:teaching_assignments")
+    return f"{base_url}?{urlencode(params)}" if params else base_url
 
 
 @login_required
@@ -62,6 +83,7 @@ def teacher_list(request):
 @login_required
 def teaching_assignment_list(request):
     query = request.GET.get("q", "").strip()
+    teacher_id = request.GET.get("teacher", "").strip()
     assignments = RombelTeachingAssignment.objects.select_related(
         "study_group__academic_year",
         "study_group__school_class",
@@ -84,15 +106,38 @@ def teaching_assignment_list(request):
             | Q(study_group__school_class__name__icontains=query)
             | Q(study_group__academic_year__name__icontains=query)
         )
+    if teacher_id:
+        assignments = assignments.filter(teacher_id=teacher_id)
 
-    active_assignments = assignments.filter(is_active=True)
+    assignment_rows = list(assignments)
+    active_assignments = [assignment for assignment in assignment_rows if assignment.is_active]
+    grouped_rows = []
+    for teacher_key, teacher_assignments_iter in groupby(assignment_rows, key=lambda assignment: assignment.teacher_id or 0):
+        teacher_assignments = list(teacher_assignments_iter)
+        first_assignment = teacher_assignments[0]
+        teacher = first_assignment.teacher
+        grouped_rows.append(
+            {
+                "teacher": teacher,
+                "teacher_pk": teacher.pk if teacher else "",
+                "teacher_name": teacher.user.full_name if teacher else "Belum ditentukan",
+                "teacher_nip": teacher.nip if teacher and teacher.nip else "NIP belum diisi",
+                "assignments": teacher_assignments,
+                "assignment_count": len(teacher_assignments),
+                "active_assignment_count": sum(1 for assignment in teacher_assignments if assignment.is_active),
+                "rombel_count": len({assignment.study_group_id for assignment in teacher_assignments}),
+                "total_weekly_hours": sum(int(assignment.weekly_hours or 0) for assignment in teacher_assignments if assignment.is_active),
+            }
+        )
+
     context = {
-        "assignments": assignments,
+        "grouped_rows": grouped_rows,
         "query": query,
-        "assignment_count": assignments.count(),
-        "active_assignment_count": active_assignments.count(),
-        "teacher_with_assignment_count": active_assignments.exclude(teacher__isnull=True).values("teacher").distinct().count(),
-        "total_weekly_hours": active_assignments.aggregate(total=Sum("weekly_hours"))["total"] or 0,
+        "selected_teacher": teacher_id,
+        "assignment_count": len(assignment_rows),
+        "active_assignment_count": len(active_assignments),
+        "teacher_with_assignment_count": len({assignment.teacher_id for assignment in active_assignments if assignment.teacher_id}),
+        "total_weekly_hours": sum(int(assignment.weekly_hours or 0) for assignment in active_assignments),
     }
     return render(request, "teachers/teaching_assignment_list.html", context)
 
@@ -100,10 +145,13 @@ def teaching_assignment_list(request):
 @login_required
 def teaching_assignment_create(request):
     form = TeacherTeachingAssignmentForm(request.POST or None)
+    teacher_id = request.GET.get("teacher", "").strip()
+    if request.method != "POST" and teacher_id and "teacher" in form.fields:
+        form.fields["teacher"].initial = teacher_id
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Pengaturan mapel guru berhasil ditambahkan.")
-        return redirect("teachers:teaching_assignments")
+        return redirect(_teaching_assignment_return_url(request))
 
     return render(
         request,
@@ -114,7 +162,7 @@ def teaching_assignment_create(request):
             "page_title": "Tambah mapel diajar per rombel",
             "page_description": "Hubungkan guru dengan rombel, mapel, KKM, dan jumlah jam pelajaran.",
             "submit_label": "Simpan pengaturan",
-            "cancel_url": "teachers:teaching_assignments",
+            "cancel_url": _teaching_assignment_return_url(request),
             "checkbox_fields": ["is_active"],
         },
     )
@@ -127,7 +175,7 @@ def teaching_assignment_update(request, pk):
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Pengaturan mapel guru berhasil diperbarui.")
-        return redirect("teachers:teaching_assignments")
+        return redirect(_teaching_assignment_return_url(request))
 
     return render(
         request,
@@ -138,7 +186,7 @@ def teaching_assignment_update(request, pk):
             "page_title": f"Edit mapel diajar {assignment}",
             "page_description": "Perbarui guru pengampu, rombel, KKM, jam pelajaran, atau status aktif.",
             "submit_label": "Update pengaturan",
-            "cancel_url": "teachers:teaching_assignments",
+            "cancel_url": _teaching_assignment_return_url(request),
             "checkbox_fields": ["is_active"],
         },
     )
@@ -150,7 +198,7 @@ def teaching_assignment_delete(request, pk):
     if request.method == "POST":
         assignment.delete()
         messages.success(request, "Pengaturan mapel guru berhasil dihapus.")
-        return redirect("teachers:teaching_assignments")
+        return redirect(_teaching_assignment_return_url(request))
 
     return render(
         request,
@@ -158,7 +206,7 @@ def teaching_assignment_delete(request, pk):
         {
             "item_name": str(assignment),
             "item_type": "mapel yang diajar",
-            "cancel_url": "teachers:teaching_assignments",
+            "cancel_url": _teaching_assignment_return_url(request),
         },
     )
 

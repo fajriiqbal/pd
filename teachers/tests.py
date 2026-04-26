@@ -231,7 +231,34 @@ class TeacherProfileViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Mapel diajar per rombel")
         self.assertContains(response, "7A")
-        self.assertContains(response, "Kelas 7")
+        self.assertContains(response, "rombel aktif")
+
+    def test_teaching_assignment_update_returns_to_selected_teacher(self):
+        assignment = RombelTeachingAssignment.objects.create(
+            study_group=self.study_group,
+            subject=self.subject,
+            teacher=self.teacher,
+            weekly_hours=6,
+            minimum_score=75,
+        )
+
+        response = self.client.post(
+            f"{reverse('teachers:teaching_assignment_edit', args=[assignment.pk])}?teacher={self.teacher.pk}",
+            {
+                "teacher": str(self.teacher.pk),
+                "study_group": str(self.study_group.pk),
+                "subject": str(self.subject.pk),
+                "minimum_score": 75,
+                "weekly_hours": 6,
+                "notes": "",
+                "is_active": "on",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            f"{reverse('teachers:teaching_assignments')}?teacher={self.teacher.pk}",
+        )
 
     def test_teacher_education_add_creates_history(self):
         scan_file = SimpleUploadedFile("ijazah-s1.pdf", b"fake-pdf-data", content_type="application/pdf")
