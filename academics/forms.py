@@ -248,12 +248,19 @@ class PbmScheduleGeneratorForm(forms.Form):
         widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 10}),
         label="Durasi mapel (menit)",
     )
-    break_after_lessons = forms.IntegerField(
+    first_break_after_lessons = forms.IntegerField(
+        min_value=1,
+        initial=4,
+        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 1}),
+        label="Istirahat pertama setelah jam ke-",
+        help_text="Contoh: 4 berarti istirahat muncul setelah 4 mapel.",
+    )
+    second_break_after_lessons = forms.IntegerField(
         min_value=1,
         initial=2,
         widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 1}),
-        label="Istirahat setelah jam ke-",
-        help_text="Contoh: 2 berarti setelah 2 mapel akan muncul istirahat.",
+        label="Istirahat kedua setelah tambahan jam ke-",
+        help_text="Contoh: 2 berarti istirahat kedua muncul 2 mapel setelah istirahat pertama.",
     )
     break_duration_minutes = forms.IntegerField(
         min_value=10,
@@ -263,7 +270,7 @@ class PbmScheduleGeneratorForm(forms.Form):
     )
     randomize = forms.BooleanField(
         required=False,
-        initial=True,
+        initial=False,
         label="Acak urutan mapel",
         help_text="Urutan mapel akan diacak setiap kali generate ulang agar mudah memilih komposisi terbaik.",
         widget=forms.CheckboxInput(attrs={"class": "mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900"}),

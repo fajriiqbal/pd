@@ -120,14 +120,24 @@ def _parse_score(value):
     return score
 
 
-def _build_pbm_day_blocks(start_time, end_time, lesson_duration_minutes, break_after_lessons, break_duration_minutes):
+def _build_pbm_day_blocks(
+    start_time,
+    end_time,
+    lesson_duration_minutes,
+    first_break_after_lessons,
+    second_break_after_lessons,
+    break_duration_minutes,
+):
     lesson_duration = timedelta(minutes=lesson_duration_minutes)
     break_duration = timedelta(minutes=break_duration_minutes)
     current = datetime.combine(datetime.today().date(), start_time)
     end = datetime.combine(datetime.today().date(), end_time)
     blocks = []
     lesson_order = 1
-    lessons_since_break = 0
+    lessons_since_first_break = 0
+    first_break_done = False
+    second_break_done = False
+    second_break_target = (first_break_after_lessons or 0) + (second_break_after_lessons or 0)
 
     while current + lesson_duration <= end:
         lesson_start = current
@@ -142,9 +152,9 @@ def _build_pbm_day_blocks(start_time, end_time, lesson_duration_minutes, break_a
         )
         current = lesson_end
         lesson_order += 1
-        lessons_since_break += 1
+        lessons_since_first_break += 1
 
-        if break_after_lessons and lessons_since_break >= break_after_lessons:
+        if not first_break_done and first_break_after_lessons and lessons_since_first_break >= first_break_after_lessons:
             if current + break_duration > end:
                 break
             break_start = current
@@ -159,9 +169,46 @@ def _build_pbm_day_blocks(start_time, end_time, lesson_duration_minutes, break_a
                 }
             )
             current = break_end
-            lessons_since_break = 0
+            first_break_done = True
+            lessons_since_first_break = 0
+            continue
+
+        if first_break_done and not second_break_done and second_break_target and lesson_order - 1 >= second_break_target:
+            if current + break_duration > end:
+                break
+            break_start = current
+            break_end = current + break_duration
+            blocks.append(
+                {
+                    "kind": "break",
+                    "label": "Istirahat",
+                    "notes": f"Istirahat {break_duration_minutes} menit",
+                    "start_time": break_start.time(),
+                    "end_time": break_end.time(),
+                }
+            )
+            current = break_end
+            second_break_done = True
+            lessons_since_first_break = 0
 
     return blocks
+
+
+def _teacher_has_pbm_conflict(teacher, academic_year, day_value, start_time, end_time, school_class):
+    if not teacher:
+        return False
+
+    return PbmScheduleSlot.objects.filter(
+        teacher=teacher,
+        academic_year=academic_year,
+        day_of_week=day_value,
+        is_active=True,
+    ).exclude(
+        school_class=school_class,
+    ).filter(
+        start_time__lt=end_time,
+        end_time__gt=start_time,
+    ).exists()
 
 
 def _build_pbm_preview_payload(cleaned_data, seed):
@@ -189,31 +236,57 @@ def _build_pbm_preview_payload(cleaned_data, seed):
                 cleaned_data["start_time"],
                 cleaned_data["end_time"],
                 cleaned_data["lesson_duration_minutes"],
-                cleaned_data["break_after_lessons"],
+                cleaned_data["first_break_after_lessons"],
+                cleaned_data["second_break_after_lessons"],
                 cleaned_data["break_duration_minutes"],
             ),
         }
 
-    subject_index = 0
+    assigned_count = 0
+    conflict_count = 0
     for day_value in lesson_blocks_by_day:
         for row in lesson_blocks_by_day[day_value]["rows"]:
-            if row["kind"] != "lesson":
-                row["start_time"] = row["start_time"].strftime("%H:%M")
-                row["end_time"] = row["end_time"].strftime("%H:%M")
-                continue
-            class_subject = subject_pool[subject_index] if subject_index < len(subject_pool) else None
-            subject_index += 1 if class_subject else 0
-            row["class_subject_id"] = class_subject.pk if class_subject else None
-            row["class_subject_name"] = class_subject.subject.name if class_subject else None
-            row["teacher_name"] = (
-                class_subject.teacher.user.full_name
-                if class_subject and class_subject.teacher and class_subject.teacher.user_id
-                else ""
-            )
-            row["room_name"] = ""
-            row["notes"] = ""
             row["start_time"] = row["start_time"].strftime("%H:%M")
             row["end_time"] = row["end_time"].strftime("%H:%M")
+            if row["kind"] != "lesson":
+                continue
+
+            start_time = datetime.strptime(row["start_time"], "%H:%M").time()
+            end_time = datetime.strptime(row["end_time"], "%H:%M").time()
+
+            selected_index = None
+            for index, class_subject in enumerate(subject_pool):
+                if _teacher_has_pbm_conflict(
+                    class_subject.teacher,
+                    academic_year,
+                    day_value,
+                    start_time,
+                    end_time,
+                    school_class,
+                ):
+                    continue
+                selected_index = index
+                break
+
+            class_subject = subject_pool.pop(selected_index) if selected_index is not None else None
+            if class_subject:
+                assigned_count += 1
+                row["class_subject_id"] = class_subject.pk
+                row["class_subject_name"] = class_subject.subject.name
+                row["teacher_name"] = (
+                    class_subject.teacher.user.full_name
+                    if class_subject.teacher and class_subject.teacher.user_id
+                    else ""
+                )
+                row["room_name"] = ""
+                row["notes"] = ""
+            else:
+                conflict_count += 1
+                row["class_subject_id"] = None
+                row["class_subject_name"] = None
+                row["teacher_name"] = ""
+                row["room_name"] = ""
+                row["notes"] = "Tidak ada mapel yang aman pada slot ini."
 
     payload = {
         "token": uuid4().hex,
@@ -226,15 +299,17 @@ def _build_pbm_preview_payload(cleaned_data, seed):
             "start_time": cleaned_data["start_time"].strftime("%H:%M"),
             "end_time": cleaned_data["end_time"].strftime("%H:%M"),
             "lesson_duration_minutes": cleaned_data["lesson_duration_minutes"],
-            "break_after_lessons": cleaned_data["break_after_lessons"],
+            "first_break_after_lessons": cleaned_data["first_break_after_lessons"],
+            "second_break_after_lessons": cleaned_data["second_break_after_lessons"],
             "break_duration_minutes": cleaned_data["break_duration_minutes"],
             "randomize": bool(cleaned_data.get("randomize")),
             "overwrite_existing": bool(cleaned_data.get("overwrite_existing")),
         },
         "days": list(lesson_blocks_by_day.values()),
-        "subject_pool_count": len(subject_pool),
-        "filled_lesson_count": min(len(subject_pool), sum(1 for day in lesson_blocks_by_day.values() for row in day["rows"] if row["kind"] == "lesson")),
-        "unfilled_lesson_count": max(0, sum(1 for day in lesson_blocks_by_day.values() for row in day["rows"] if row["kind"] == "lesson") - len(subject_pool)),
+        "subject_pool_count": sum(int(class_subject.weekly_hours or 0) for class_subject in class_subjects),
+        "filled_lesson_count": assigned_count,
+        "unfilled_lesson_count": conflict_count + len(subject_pool),
+        "conflict_count": conflict_count,
     }
     return payload
 

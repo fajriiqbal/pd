@@ -73,10 +73,16 @@
                     {% if form.lesson_duration_minutes.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.lesson_duration_minutes.errors|striptags }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-700" for="{{ form.break_after_lessons.id_for_label }}">{{ form.break_after_lessons.label }}</label>
-                    {{ form.break_after_lessons }}
-                    {% if form.break_after_lessons.help_text %}<p class="mt-1 text-xs text-slate-500">{{ form.break_after_lessons.help_text }}</p>{% endif %}
-                    {% if form.break_after_lessons.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.break_after_lessons.errors|striptags }}</p>{% endif %}
+                    <label class="text-sm font-medium text-slate-700" for="{{ form.first_break_after_lessons.id_for_label }}">{{ form.first_break_after_lessons.label }}</label>
+                    {{ form.first_break_after_lessons }}
+                    {% if form.first_break_after_lessons.help_text %}<p class="mt-1 text-xs text-slate-500">{{ form.first_break_after_lessons.help_text }}</p>{% endif %}
+                    {% if form.first_break_after_lessons.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.first_break_after_lessons.errors|striptags }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="{{ form.second_break_after_lessons.id_for_label }}">{{ form.second_break_after_lessons.label }}</label>
+                    {{ form.second_break_after_lessons }}
+                    {% if form.second_break_after_lessons.help_text %}<p class="mt-1 text-xs text-slate-500">{{ form.second_break_after_lessons.help_text }}</p>{% endif %}
+                    {% if form.second_break_after_lessons.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.second_break_after_lessons.errors|striptags }}</p>{% endif %}
                 </div>
                 <div>
                     <label class="text-sm font-medium text-slate-700" for="{{ form.break_duration_minutes.id_for_label }}">{{ form.break_duration_minutes.label }}</label>
@@ -115,6 +121,9 @@
                     <div class="rounded-3xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                         <p><strong class="text-slate-950">Jadwal lama:</strong> akan ditimpa saat disimpan</p>
                         <p class="mt-1">Seed preview: {{ preview.seed }}</p>
+                        {% if preview.conflict_count %}
+                            <p class="mt-1 font-medium text-amber-700">{{ preview.conflict_count }} slot dilewati karena bentrok jam guru.</p>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -162,7 +171,7 @@
                                                     {% elif row.class_subject_name %}
                                                         {{ row.room_name|default:"-" }}
                                                     {% else %}
-                                                        Slot belum terisi
+                                                        {{ row.notes }}
                                                     {% endif %}
                                                 </td>
                                             </tr>

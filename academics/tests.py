@@ -297,9 +297,9 @@ class AcademicDetailViewTests(TestCase):
                 "start_time": "07:30",
                 "end_time": "10:30",
                 "lesson_duration_minutes": 40,
-                "break_after_lessons": 2,
+                "first_break_after_lessons": 4,
+                "second_break_after_lessons": 2,
                 "break_duration_minutes": 30,
-                "randomize": "on",
                 "overwrite_existing": "on",
                 "action": "generate",
             },
@@ -308,9 +308,9 @@ class AcademicDetailViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Preview jadwal")
         self.assertContains(response, "Generate ulang")
-        self.assertContains(response, "Istirahat")
         self.assertContains(response, "Matematika")
         self.assertContains(response, "IPA")
+        self.assertContains(response, "Istirahat")
 
     def test_pbm_schedule_generator_can_save_preview(self):
         subject = Subject.objects.create(name="Bahasa Inggris", code="BIG", category=Subject.Category.GENERAL)
@@ -330,7 +330,8 @@ class AcademicDetailViewTests(TestCase):
                 "start_time": "07:30",
                 "end_time": "11:00",
                 "lesson_duration_minutes": 40,
-                "break_after_lessons": 2,
+                "first_break_after_lessons": 4,
+                "second_break_after_lessons": 2,
                 "break_duration_minutes": 30,
                 "randomize": "on",
                 "overwrite_existing": "on",
@@ -355,6 +356,59 @@ class AcademicDetailViewTests(TestCase):
                 school_class=self.school_class,
             ).exists()
         )
+
+    def test_pbm_schedule_generator_avoids_teacher_conflict(self):
+        conflict_class = SchoolClass.objects.create(name="Kelas 8", level_order=8)
+        subject_a = Subject.objects.create(name="Matematika", code="MTK", category=Subject.Category.GENERAL)
+        subject_b = Subject.objects.create(name="IPA", code="IPA", category=Subject.Category.GENERAL)
+        class_subject_a = ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject_a,
+            teacher=self.homeroom_teacher,
+            minimum_score=75,
+            weekly_hours=1,
+        )
+        ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject_b,
+            teacher=self.other_teacher,
+            minimum_score=75,
+            weekly_hours=1,
+        )
+        PbmScheduleSlot.objects.create(
+            academic_year=self.academic_year,
+            school_class=conflict_class,
+            day_of_week=PbmScheduleSlot.DayOfWeek.MONDAY,
+            lesson_order=1,
+            start_time="07:30",
+            end_time="08:10",
+            class_subject=class_subject_a,
+            teacher=self.homeroom_teacher,
+        )
+
+        response = self.client.post(
+            reverse("academics:pbm_schedule_generate"),
+            {
+                "academic_year": str(self.academic_year.pk),
+                "school_class": str(self.school_class.pk),
+                "start_time": "07:30",
+                "end_time": "08:10",
+                "lesson_duration_minutes": 40,
+                "first_break_after_lessons": 4,
+                "second_break_after_lessons": 2,
+                "break_duration_minutes": 30,
+                "overwrite_existing": "on",
+                "action": "generate",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        preview = self.client.session.get("pbm_schedule_preview")
+        self.assertIsNotNone(preview)
+        monday_rows = next(day["rows"] for day in preview["days"] if day["day_label"] == "Senin")
+        lesson_row = next(row for row in monday_rows if row["kind"] == "lesson")
+        self.assertEqual(lesson_row["class_subject_name"], "IPA")
+        self.assertNotEqual(lesson_row["teacher_name"], self.homeroom_teacher.user.full_name)
 
     def test_curriculum_teacher_hours_page_lists_teacher_totals(self):
         subject_a = Subject.objects.create(name="Matematika", code="MTK", category=Subject.Category.GENERAL)
