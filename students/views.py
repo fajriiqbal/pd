@@ -449,11 +449,17 @@ def student_mutation_create(request):
 
         student = mutation.student
         if mutation.direction == StudentMutationRecord.Direction.INBOUND:
+            update_fields = ["study_group", "class_name", "is_active", "updated_at"]
+            if not student.nis:
+                alumni_archive = StudentAlumniArchive.objects.filter(student=student).first()
+                if alumni_archive and alumni_archive.nis:
+                    student.nis = alumni_archive.nis
+                    update_fields.append("nis")
             if mutation.destination_study_group_id:
                 student.study_group = mutation.destination_study_group
                 student.class_name = mutation.destination_study_group.name
             student.is_active = True
-            student.save(update_fields=["study_group", "class_name", "is_active", "updated_at"])
+            student.save(update_fields=update_fields)
         else:
             student.is_active = False
             student.study_group = None

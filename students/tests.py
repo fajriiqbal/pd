@@ -657,6 +657,7 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertContains(list_response, self.student_7a.user.full_name)
 
     def test_student_mutation_outbound_creates_archive_and_disables_student(self):
+        original_nis = self.student_7a.nis
         response = self.client.post(
             reverse("students:mutation_add"),
             {
@@ -682,7 +683,48 @@ class StudentListAndBulkDeleteTests(TestCase):
         mutation = StudentMutationRecord.objects.get(student=self.student_7a)
         self.assertEqual(mutation.direction, StudentMutationRecord.Direction.OUTBOUND)
         alumni = StudentAlumniArchive.objects.get(student=self.student_7a)
+        self.assertEqual(alumni.nis, original_nis)
         self.assertEqual(alumni.graduation_status, StudentAlumniArchive.GraduationStatus.TRANSFERRED)
+
+    def test_inbound_mutation_restores_previous_nis_from_archive(self):
+        original_nis = self.student_7a.nis
+        StudentAlumniArchive.objects.create(
+            student=self.student_7a,
+            full_name=self.student_7a.user.full_name,
+            nis=original_nis or "",
+            nisn=self.student_7a.nisn or "",
+            gender=self.student_7a.gender,
+            class_name=self.student_7a.class_name,
+            entry_year=self.student_7a.entry_year,
+            graduation_year=2026,
+            graduation_status=StudentAlumniArchive.GraduationStatus.TRANSFERRED,
+        )
+        StudentProfile.objects.filter(pk=self.student_7a.pk).update(nis=None)
+        self.student_7a.refresh_from_db()
+        self.assertIsNone(self.student_7a.nis)
+
+        response = self.client.post(
+            reverse("students:mutation_add"),
+            {
+                "student": str(self.student_7a.pk),
+                "direction": StudentMutationRecord.Direction.INBOUND,
+                "mutation_date": "2026-04-23",
+                "origin_school_name": "MTs Asal",
+                "origin_school_npsn": "12345678",
+                "destination_school_name": "",
+                "destination_school_npsn": "",
+                "origin_study_group": "",
+                "destination_study_group": str(self.group_8a.pk),
+                "reason": "Kembali mutasi masuk",
+                "notes": "NIS harus dipulihkan dari arsip",
+            },
+        )
+
+        self.assertRedirects(response, reverse("students:detail", args=[self.student_7a.pk]))
+        self.student_7a.refresh_from_db()
+        self.assertEqual(self.student_7a.nis, original_nis)
+        self.assertTrue(self.student_7a.is_active)
+        self.assertEqual(self.student_7a.study_group, self.group_8a)
 
     def test_bulk_delete_removes_selected_students_and_their_users(self):
         response = self.client.post(
