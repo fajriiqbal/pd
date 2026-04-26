@@ -35,11 +35,30 @@
                 </div>
             {% endif %}
 
-            <form method="post" class="space-y-6">
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
 
                 <div class="grid gap-4 md:grid-cols-2">
+                    <div class="md:col-span-2 rounded-[28px] border border-slate-100 bg-slate-50 p-5">
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Logo madrasah</h3>
+                        <div class="mt-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+                            <div>
+                                <label for="{{ form.logo.id_for_label }}" class="text-sm font-medium text-slate-700">{{ form.logo.label }}</label>
+                                {{ form.logo }}
+                                {% if form.logo.errors %}<p class="mt-1 text-sm text-rose-700">{{ form.logo.errors }}</p>{% endif %}
+                                <p class="mt-1 text-sm text-slate-500">Gunakan logo resmi madrasah agar kop dan tampilan aplikasi seragam.</p>
+                            </div>
+                            <div class="rounded-3xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
+                                {% if identity and identity.logo %}
+                                    <img src="{{ identity.logo.url }}" alt="Logo madrasah" class="h-20 w-20 rounded-2xl object-contain">
+                                {% else %}
+                                    <p>Belum ada logo yang diunggah.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="md:col-span-2 rounded-[28px] border border-slate-100 bg-slate-50 p-5">
                         <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Identitas inti</h3>
                         <div class="mt-4 grid gap-4 md:grid-cols-2">
@@ -192,4 +211,3 @@
     </div>
 </section>
 {% endblock %}
-

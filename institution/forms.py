@@ -13,6 +13,7 @@ class SchoolIdentityForm(forms.ModelForm):
     class Meta:
         model = SchoolIdentity
         fields = [
+            "logo",
             "institution_name",
             "npsn",
             "nsm",
@@ -33,6 +34,7 @@ class SchoolIdentityForm(forms.ModelForm):
             "letter_footer",
         ]
         widgets = {
+            "logo": forms.ClearableFileInput(attrs={"class": BASE_INPUT_CLASS, "accept": ".png,.jpg,.jpeg,.webp"}),
             "institution_name": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Contoh: MTs Sunan Kalijaga Tulung"}),
             "npsn": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Nomor Pokok Sekolah Nasional"}),
             "nsm": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Nomor Statistik Madrasah"}),
@@ -52,4 +54,3 @@ class SchoolIdentityForm(forms.ModelForm):
             "operator_phone": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Nomor operator"}),
             "letter_footer": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Contoh: Melayani dengan cepat dan tepat"}),
         }
-

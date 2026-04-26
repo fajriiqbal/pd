@@ -2,6 +2,7 @@ from django.db import models
 
 
 class SchoolIdentity(models.Model):
+    logo = models.ImageField(upload_to="institution/", blank=True, verbose_name="Logo madrasah")
     institution_name = models.CharField(max_length=150, verbose_name="Nama madrasah")
     npsn = models.CharField(max_length=20, verbose_name="NPSN")
     nsm = models.CharField(max_length=30, blank=True, verbose_name="NSM")
@@ -30,6 +31,12 @@ class SchoolIdentity(models.Model):
     def __str__(self) -> str:
         return self.institution_name
 
+    @property
+    def logo_url(self) -> str:
+        if self.logo:
+            return self.logo.url
+        return ""
+
     def save(self, *args, **kwargs):
         if not self.pk:
             existing = type(self).objects.first()
@@ -55,4 +62,3 @@ class SchoolIdentity(models.Model):
     def full_address(self) -> str:
         parts = [self.address, self.village, self.district, self.regency, self.province]
         return ", ".join(part for part in parts if part)
-

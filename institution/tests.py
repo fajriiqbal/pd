@@ -1,9 +1,20 @@
+from io import BytesIO
+
+from PIL import Image
 from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from accounts.models import CustomUser
 
 from .models import SchoolIdentity
+
+
+def build_sample_png():
+    buffer = BytesIO()
+    image = Image.new("RGB", (1, 1), color=(31, 41, 55))
+    image.save(buffer, format="PNG")
+    return SimpleUploadedFile("logo.png", buffer.getvalue(), content_type="image/png")
 
 
 class SchoolIdentitySetupTests(TestCase):
@@ -26,6 +37,7 @@ class SchoolIdentitySetupTests(TestCase):
             reverse("institution:setup"),
             data={
                 "next": reverse("dashboard:home"),
+                "logo": build_sample_png(),
                 "institution_name": "MTs Sunan Kalijaga",
                 "npsn": "12345678",
                 "nsm": "MTs123456",
@@ -53,4 +65,4 @@ class SchoolIdentitySetupTests(TestCase):
         identity = SchoolIdentity.objects.first()
         self.assertTrue(identity.is_complete)
         self.assertEqual(identity.institution_name, "MTs Sunan Kalijaga")
-
+        self.assertTrue(identity.logo)

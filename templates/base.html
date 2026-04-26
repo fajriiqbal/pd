@@ -34,7 +34,11 @@
     <div id="page-transition-overlay" class="page-transition-overlay hidden" aria-hidden="true">
         <div class="page-transition-panel">
             <div class="flex items-center gap-4">
-                <img src="{% static 'img/madrasah-logo.svg' %}" alt="Logo PDM" class="brand-mark">
+                {% if request.school_identity and request.school_identity.logo %}
+                    <img src="{{ request.school_identity.logo.url }}" alt="{{ request.school_identity.institution_name }}" class="brand-mark rounded-xl object-contain bg-white">
+                {% else %}
+                    <img src="{% static 'img/madrasah-logo.svg' %}" alt="Logo PDM" class="brand-mark">
+                {% endif %}
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">PDM</p>
                     <p class="mt-1 text-sm text-slate-500">Memuat halaman dengan aman dan rapi...</p>
@@ -55,7 +59,11 @@
                     <div class="flex h-full flex-col px-4 py-5">
                         <div class="px-3 pb-5">
                                 <a href="{% url 'dashboard:home' %}" class="flex items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-white/55">
-                                    <img src="{% static 'img/madrasah-logo.svg' %}" alt="Logo PDM" class="brand-mark">
+                                    {% if request.school_identity and request.school_identity.logo %}
+                                        <img src="{{ request.school_identity.logo.url }}" alt="{{ request.school_identity.institution_name }}" class="brand-mark rounded-xl object-contain bg-white">
+                                    {% else %}
+                                        <img src="{% static 'img/madrasah-logo.svg' %}" alt="Logo PDM" class="brand-mark">
+                                    {% endif %}
                                     <span>
                                     <span class="block text-sm font-semibold tracking-tight text-slate-900">PDM</span>
                                     <span class="mt-1 block text-xs text-slate-500">Pusat Data Madsuka</span>

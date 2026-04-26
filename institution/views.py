@@ -21,7 +21,7 @@ def _safe_next_url(request):
 @login_required
 def setup(request):
     identity = SchoolIdentity.objects.first()
-    form = SchoolIdentityForm(request.POST or None, instance=identity)
+    form = SchoolIdentityForm(request.POST or None, request.FILES or None, instance=identity)
 
     if request.method == "POST" and form.is_valid():
         identity = form.save()
