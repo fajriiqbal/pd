@@ -3,7 +3,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from academics.models import SchoolClass
-from .year_utils import infer_student_entry_year
 
 
 class StudentProfile(models.Model):
@@ -70,9 +69,6 @@ class StudentProfile(models.Model):
     def save(self, *args, **kwargs):
         self.nis = self.nis or None
         self.nisn = self.nisn or None
-        inferred_entry_year = infer_student_entry_year(self)
-        if inferred_entry_year:
-            self.entry_year = inferred_entry_year
         if not self.nis:
             generated_nis = self._generate_nis()
             if generated_nis:
@@ -80,7 +76,7 @@ class StudentProfile(models.Model):
         super().save(*args, **kwargs)
 
     def _generate_nis(self) -> str | None:
-        effective_entry_year = infer_student_entry_year(self)
+        effective_entry_year = self.entry_year or None
         if not effective_entry_year:
             return None
 

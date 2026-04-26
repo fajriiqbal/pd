@@ -289,7 +289,7 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertEqual(len(self.student_8a_without_nis.nis), len("MTs12345624") + 4)
         self.assertEqual(self.student_8a_without_nis.entry_year, 2024)
 
-    def test_student_without_study_group_uses_class_name_to_infer_entry_year(self):
+    def test_manual_entry_year_takes_priority_over_class_label(self):
         user = CustomUser.objects.create_user(
             username="siswa-classname",
             password="rahasia123",
@@ -303,15 +303,15 @@ class StudentListAndBulkDeleteTests(TestCase):
             gender=StudentProfile.Gender.MALE,
             class_name="8A",
             study_group=None,
-            entry_year=2025,
+            entry_year=2026,
             is_active=True,
         )
 
-        self.assertEqual(student.entry_year, 2024)
-        self.assertTrue(student.nis.startswith("MTs12345624"))
-        self.assertEqual(len(student.nis), len("MTs12345624") + 4)
+        self.assertEqual(student.entry_year, 2026)
+        self.assertTrue(student.nis.startswith("MTs12345626"))
+        self.assertEqual(len(student.nis), len("MTs12345626") + 4)
 
-    def test_manual_student_save_infers_entry_year_from_class_name(self):
+    def test_existing_nis_stays_locked_when_entry_year_changes(self):
         user = CustomUser.objects.create_user(
             username="siswa-manual-class",
             password="rahasia123",
@@ -325,13 +325,21 @@ class StudentListAndBulkDeleteTests(TestCase):
             gender=StudentProfile.Gender.FEMALE,
             class_name="9A",
             study_group=None,
-            entry_year=2025,
+            entry_year=2023,
             is_active=True,
         )
 
         self.assertEqual(student.entry_year, 2023)
         self.assertTrue(student.nis.startswith("MTs12345623"))
         self.assertEqual(len(student.nis), len("MTs12345623") + 4)
+
+        original_nis = student.nis
+        student.entry_year = 2026
+        student.save(update_fields=["entry_year"])
+        student.refresh_from_db()
+
+        self.assertEqual(student.entry_year, 2026)
+        self.assertEqual(student.nis, original_nis)
 
     def test_first_class_seven_student_gets_sequence_0001(self):
         user = CustomUser.objects.create_user(
