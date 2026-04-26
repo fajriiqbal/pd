@@ -76,12 +76,10 @@ class StudentProfile(models.Model):
         super().save(*args, **kwargs)
 
     def _generate_nis(self) -> str | None:
-        from institution.models import SchoolIdentity
-
-        identity = SchoolIdentity.objects.first()
-        prefix = (identity.nsm if identity and identity.nsm else "").strip()
-        if not prefix:
+        if not self.entry_year:
             return None
+
+        prefix = f"{int(self.entry_year) % 100:02d}"
 
         existing_numbers = []
         for existing_nis in (
