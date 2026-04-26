@@ -365,6 +365,7 @@
 (() => {
     const tabs = Array.from(document.querySelectorAll("[data-tab-target]"));
     const panels = Array.from(document.querySelectorAll("[data-teacher-panel]"));
+    const params = new URLSearchParams(window.location.search);
     const schoolInput = document.querySelector("[data-school-search-input]");
     const schoolResults = document.querySelector("[data-school-results]");
     const schoolSelected = document.querySelector("[data-school-selected]");
@@ -399,7 +400,7 @@
         tab.addEventListener("click", () => activateTab(tab.dataset.tabTarget));
     });
 
-    activateTab("data-diri");
+    activateTab(params.get("tab") || "data-diri");
 
     if (schoolInput && schoolResults && schoolSelected && schoolNameField) {
         let timer = null;
