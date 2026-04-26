@@ -333,6 +333,28 @@ class StudentListAndBulkDeleteTests(TestCase):
         self.assertTrue(student.nis.startswith("MTs12345623"))
         self.assertEqual(len(student.nis), len("MTs12345623") + 4)
 
+    def test_first_class_seven_student_gets_sequence_0001(self):
+        user = CustomUser.objects.create_user(
+            username="siswa-7baru",
+            password="rahasia123",
+            full_name="Siswa Kelas Tujuh Baru",
+            role=CustomUser.Role.STUDENT,
+        )
+        student = StudentProfile.objects.create(
+            user=user,
+            nis=None,
+            nisn="770011",
+            gender=StudentProfile.Gender.MALE,
+            class_name="7A",
+            study_group=self.group_7a,
+            entry_year=2025,
+            is_active=True,
+        )
+
+        self.assertEqual(student.entry_year, 2025)
+        self.assertTrue(student.nis.startswith("MTs123456250001"))
+        self.assertEqual(len(student.nis), len("MTs123456250001"))
+
     def test_student_list_rombel_options_follow_selected_class_and_show_student_totals(self):
         group_7b = StudyGroup.objects.create(
             academic_year=self.academic_year,
