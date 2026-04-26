@@ -1,5 +1,8 @@
+import random
 import re
 from decimal import Decimal, InvalidOperation
+from datetime import datetime, timedelta
+from uuid import uuid4
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -13,7 +16,17 @@ from accounts.models import CustomUser
 from students.models import StudentProfile
 
 from .curriculum import SUBJECT_PRESETS
-from .forms import AcademicYearCreateForm, AcademicYearForm, ClassSubjectForm, GradeBookForm, PbmScheduleSlotForm, SchoolClassForm, StudyGroupForm, SubjectForm
+from .forms import (
+    AcademicYearCreateForm,
+    AcademicYearForm,
+    ClassSubjectForm,
+    GradeBookForm,
+    PbmScheduleGeneratorForm,
+    PbmScheduleSlotForm,
+    SchoolClassForm,
+    StudyGroupForm,
+    SubjectForm,
+)
 from .models import AcademicYear, ClassSubject, GradeBook, PbmScheduleSlot, SchoolClass, StudentGrade, StudyGroup, Subject
 
 
@@ -103,6 +116,163 @@ def _parse_score(value):
     if score < 0 or score > 100:
         raise ValueError("Nilai harus berada di antara 0 sampai 100.")
     return score
+
+
+def _build_pbm_day_blocks(start_time, end_time, lesson_duration_minutes, break_after_lessons, break_duration_minutes):
+    lesson_duration = timedelta(minutes=lesson_duration_minutes)
+    break_duration = timedelta(minutes=break_duration_minutes)
+    current = datetime.combine(datetime.today().date(), start_time)
+    end = datetime.combine(datetime.today().date(), end_time)
+    blocks = []
+    lesson_order = 1
+    lessons_since_break = 0
+
+    while current + lesson_duration <= end:
+        lesson_start = current
+        lesson_end = current + lesson_duration
+        blocks.append(
+            {
+                "kind": "lesson",
+                "lesson_order": lesson_order,
+                "start_time": lesson_start.time(),
+                "end_time": lesson_end.time(),
+            }
+        )
+        current = lesson_end
+        lesson_order += 1
+        lessons_since_break += 1
+
+        if break_after_lessons and lessons_since_break >= break_after_lessons:
+            if current + break_duration > end:
+                break
+            break_start = current
+            break_end = current + break_duration
+            blocks.append(
+                {
+                    "kind": "break",
+                    "label": "Istirahat",
+                    "notes": f"Istirahat {break_duration_minutes} menit",
+                    "start_time": break_start.time(),
+                    "end_time": break_end.time(),
+                }
+            )
+            current = break_end
+            lessons_since_break = 0
+
+    return blocks
+
+
+def _build_pbm_preview_payload(cleaned_data, seed):
+    school_class = cleaned_data["school_class"]
+    academic_year = cleaned_data["academic_year"]
+    class_subjects = list(
+        ClassSubject.objects.select_related("subject", "teacher__user")
+        .filter(school_class=school_class, is_active=True)
+        .order_by("subject__sort_order", "subject__name")
+    )
+    subject_pool = []
+    for class_subject in class_subjects:
+        subject_pool.extend([class_subject] * int(class_subject.weekly_hours or 0))
+
+    rng = random.Random(seed)
+    if cleaned_data.get("randomize"):
+        rng.shuffle(subject_pool)
+
+    lesson_blocks_by_day = {}
+    for day_value, day_label in PbmScheduleSlot.DayOfWeek.choices:
+        lesson_blocks_by_day[day_value] = {
+            "day_value": day_value,
+            "day_label": day_label,
+            "rows": _build_pbm_day_blocks(
+                cleaned_data["start_time"],
+                cleaned_data["end_time"],
+                cleaned_data["lesson_duration_minutes"],
+                cleaned_data["break_after_lessons"],
+                cleaned_data["break_duration_minutes"],
+            ),
+        }
+
+    subject_index = 0
+    for day_value in lesson_blocks_by_day:
+        for row in lesson_blocks_by_day[day_value]["rows"]:
+            if row["kind"] != "lesson":
+                row["start_time"] = row["start_time"].strftime("%H:%M")
+                row["end_time"] = row["end_time"].strftime("%H:%M")
+                continue
+            class_subject = subject_pool[subject_index] if subject_index < len(subject_pool) else None
+            subject_index += 1 if class_subject else 0
+            row["class_subject_id"] = class_subject.pk if class_subject else None
+            row["class_subject_name"] = class_subject.subject.name if class_subject else None
+            row["teacher_name"] = (
+                class_subject.teacher.user.full_name
+                if class_subject and class_subject.teacher and class_subject.teacher.user_id
+                else ""
+            )
+            row["room_name"] = ""
+            row["notes"] = ""
+            row["start_time"] = row["start_time"].strftime("%H:%M")
+            row["end_time"] = row["end_time"].strftime("%H:%M")
+
+    payload = {
+        "token": uuid4().hex,
+        "seed": seed,
+        "settings": {
+            "academic_year_id": academic_year.pk,
+            "academic_year_name": academic_year.name,
+            "school_class_id": school_class.pk,
+            "school_class_name": school_class.name,
+            "start_time": cleaned_data["start_time"].strftime("%H:%M"),
+            "end_time": cleaned_data["end_time"].strftime("%H:%M"),
+            "lesson_duration_minutes": cleaned_data["lesson_duration_minutes"],
+            "break_after_lessons": cleaned_data["break_after_lessons"],
+            "break_duration_minutes": cleaned_data["break_duration_minutes"],
+            "randomize": bool(cleaned_data.get("randomize")),
+            "overwrite_existing": bool(cleaned_data.get("overwrite_existing")),
+        },
+        "days": list(lesson_blocks_by_day.values()),
+        "subject_pool_count": len(subject_pool),
+        "filled_lesson_count": min(len(subject_pool), sum(1 for day in lesson_blocks_by_day.values() for row in day["rows"] if row["kind"] == "lesson")),
+        "unfilled_lesson_count": max(0, sum(1 for day in lesson_blocks_by_day.values() for row in day["rows"] if row["kind"] == "lesson") - len(subject_pool)),
+    }
+    return payload
+
+
+def _save_pbm_preview_payload(payload):
+    settings_data = payload["settings"]
+    academic_year = AcademicYear.objects.get(pk=settings_data["academic_year_id"])
+    school_class = SchoolClass.objects.get(pk=settings_data["school_class_id"])
+
+    if settings_data.get("overwrite_existing"):
+        PbmScheduleSlot.objects.filter(
+            academic_year=academic_year,
+            school_class=school_class,
+            is_active=True,
+        ).delete()
+
+    created_slots = []
+    for day in payload["days"]:
+        for row in day["rows"]:
+            if row["kind"] != "lesson" or not row.get("class_subject_id"):
+                continue
+            class_subject = ClassSubject.objects.select_related("teacher").get(pk=row["class_subject_id"])
+            created_slots.append(
+                PbmScheduleSlot(
+                    academic_year=academic_year,
+                    school_class=school_class,
+                    day_of_week=day["day_value"],
+                    lesson_order=row["lesson_order"],
+                    start_time=datetime.strptime(row["start_time"], "%H:%M").time(),
+                    end_time=datetime.strptime(row["end_time"], "%H:%M").time(),
+                    class_subject=class_subject,
+                    teacher=class_subject.teacher,
+                    room_name=row.get("room_name", ""),
+                    notes=row.get("notes", ""),
+                    is_active=True,
+                )
+            )
+
+    PbmScheduleSlot.objects.bulk_create(created_slots)
+    return len(created_slots)
 
 
 def _report_rows(study_group, semester):
@@ -759,6 +929,50 @@ def pbm_schedule_delete(request, pk):
             "cancel_url": "academics:pbm_schedule_list",
         },
     )
+
+
+@login_required
+def pbm_schedule_generate(request):
+    session_key = "pbm_schedule_preview"
+    preview_payload = request.session.get(session_key)
+
+    if request.method == "POST" and request.POST.get("action") == "save":
+        preview_token = request.POST.get("preview_token", "")
+        if not preview_payload:
+            messages.error(request, "Belum ada preview jadwal untuk disimpan.")
+            return redirect("academics:pbm_schedule_generate")
+        if preview_payload.get("token") != preview_token:
+            messages.error(request, "Preview jadwal sudah berubah. Generate ulang dulu sebelum menyimpan.")
+            return redirect("academics:pbm_schedule_generate")
+
+        created_count = _save_pbm_preview_payload(preview_payload)
+        request.session.pop(session_key, None)
+        messages.success(request, f"Jadwal PBM otomatis berhasil disimpan dengan {created_count} slot.")
+        return redirect("academics:pbm_schedule_list")
+
+    form = PbmScheduleGeneratorForm(request.POST or None)
+    if request.method == "POST" and request.POST.get("action") in {"generate", "regenerate"}:
+        if form.is_valid():
+            seed = (preview_payload or {}).get("seed", 0) + 1
+            if request.POST.get("action") == "generate" and not preview_payload:
+                seed = 1
+            preview_payload = _build_pbm_preview_payload(form.cleaned_data, seed)
+            request.session[session_key] = preview_payload
+            messages.success(request, "Preview jadwal berhasil dibuat. Anda bisa generate ulang sampai urutannya cocok.")
+        else:
+            preview_payload = None
+
+    if preview_payload and not form.is_bound:
+        form = PbmScheduleGeneratorForm(initial=preview_payload["settings"])
+        form.fields["academic_year"].initial = preview_payload["settings"]["academic_year_id"]
+        form.fields["school_class"].initial = preview_payload["settings"]["school_class_id"]
+
+    context = {
+        "form": form,
+        "preview": preview_payload,
+        "preview_token": preview_payload["token"] if preview_payload else "",
+    }
+    return render(request, "academics/pbm_schedule_generate.html", context)
 
 
 @login_required

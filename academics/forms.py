@@ -1,3 +1,5 @@
+from datetime import time
+
 from django import forms
 
 from teachers.models import TeacherProfile
@@ -217,6 +219,77 @@ class PbmScheduleSlotForm(forms.ModelForm):
         self.fields["teacher"].required = False
         if not self.instance.pk:
             self.fields["is_active"].initial = True
+
+
+class PbmScheduleGeneratorForm(forms.Form):
+    academic_year = forms.ModelChoiceField(
+        queryset=AcademicYear.objects.none(),
+        widget=forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+        label="Tahun ajaran",
+    )
+    school_class = forms.ModelChoiceField(
+        queryset=SchoolClass.objects.none(),
+        widget=forms.Select(attrs={"class": BASE_INPUT_CLASS}),
+        label="Kelas",
+    )
+    start_time = forms.TimeField(
+        initial=time(7, 30),
+        widget=forms.TimeInput(attrs={"class": BASE_INPUT_CLASS, "type": "time"}),
+        label="Jam mulai",
+    )
+    end_time = forms.TimeField(
+        initial=time(14, 0),
+        widget=forms.TimeInput(attrs={"class": BASE_INPUT_CLASS, "type": "time"}),
+        label="Jam selesai",
+    )
+    lesson_duration_minutes = forms.IntegerField(
+        min_value=10,
+        initial=40,
+        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 10}),
+        label="Durasi mapel (menit)",
+    )
+    break_after_lessons = forms.IntegerField(
+        min_value=1,
+        initial=2,
+        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 1}),
+        label="Istirahat setelah jam ke-",
+        help_text="Contoh: 2 berarti setelah 2 mapel akan muncul istirahat.",
+    )
+    break_duration_minutes = forms.IntegerField(
+        min_value=10,
+        initial=30,
+        widget=forms.NumberInput(attrs={"class": BASE_INPUT_CLASS, "min": 10}),
+        label="Durasi istirahat (menit)",
+    )
+    randomize = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Acak urutan mapel",
+        help_text="Urutan mapel akan diacak setiap kali generate ulang agar mudah memilih komposisi terbaik.",
+        widget=forms.CheckboxInput(attrs={"class": "mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900"}),
+    )
+    overwrite_existing = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Timpa jadwal lama",
+        help_text="Jadwal lama untuk kelas dan tahun ajaran ini akan diganti saat hasil disimpan.",
+        widget=forms.CheckboxInput(attrs={"class": "mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["academic_year"].queryset = AcademicYear.objects.order_by("-start_date")
+        self.fields["school_class"].queryset = SchoolClass.objects.filter(is_active=True).order_by("level_order", "name")
+        self.fields["academic_year"].initial = AcademicYear.objects.filter(is_active=True).first()
+        self.fields["school_class"].initial = SchoolClass.objects.filter(is_active=True).order_by("level_order", "name").first()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_time = cleaned_data.get("start_time")
+        end_time = cleaned_data.get("end_time")
+        if start_time and end_time and end_time <= start_time:
+            self.add_error("end_time", "Jam selesai harus setelah jam mulai.")
+        return cleaned_data
 
 
 class GradeBookForm(forms.ModelForm):

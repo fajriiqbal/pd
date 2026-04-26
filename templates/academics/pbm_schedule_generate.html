@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Generate Jadwal PBM | PDM{% endblock %}
+{% block page_kicker %}Kurikulum{% endblock %}
+{% block page_title %}Generate Jadwal PBM{% endblock %}
+{% block page_description %}Buat preview jadwal mingguan otomatis dari struktur kurikulum sebelum disimpan ke jadwal PBM.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white p-6 shadow-soft lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-2xl">
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Generate otomatis</p>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Susun jadwal PBM dari struktur kurikulum</h2>
+            <p class="mt-2 text-sm leading-7 text-slate-500">
+                Tentukan rentang waktu belajar, durasi mapel, dan jeda istirahat. Hasil preview bisa diacak ulang berkali-kali sebelum disimpan.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'academics:pbm_schedule_list' %}" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Kembali ke jadwal PBM</a>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="preview_token" value="{{ preview_token }}">
+
+        <section class="rounded-[28px] border border-white/80 bg-white p-6 shadow-soft">
+            <div class="mb-5 flex items-center justify-between gap-3">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Pengaturan generator</p>
+                    <h3 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Atur rentang dan pola jam</h3>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button type="submit" name="action" value="generate" class="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800">Generate preview</button>
+                    {% if preview %}
+                        <button type="submit" name="action" value="regenerate" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Generate ulang</button>
+                        <button type="submit" name="action" value="save" class="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500">Simpan hasil ini</button>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="{{ form.academic_year.id_for_label }}">{{ form.academic_year.label }}</label>
+                    {{ form.academic_year }}
+                    {% if form.academic_year.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.academic_year.errors|striptags }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="{{ form.school_class.id_for_label }}">{{ form.school_class.label }}</label>
+                    {{ form.school_class }}
+                    {% if form.school_class.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.school_class.errors|striptags }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="{{ form.start_time.id_for_label }}">{{ form.start_time.label }}</label>
+                    {{ form.start_time }}
+                    {% if form.start_time.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.start_time.errors|striptags }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="{{ form.end_time.id_for_label }}">{{ form.end_time.label }}</label>
+                    {{ form.end_time }}
+                    {% if form.end_time.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.end_time.errors|striptags }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="{{ form.lesson_duration_minutes.id_for_label }}">{{ form.lesson_duration_minutes.label }}</label>
+                    {{ form.lesson_duration_minutes }}
+                    {% if form.lesson_duration_minutes.help_text %}<p class="mt-1 text-xs text-slate-500">{{ form.lesson_duration_minutes.help_text }}</p>{% endif %}
+                    {% if form.lesson_duration_minutes.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.lesson_duration_minutes.errors|striptags }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="{{ form.break_after_lessons.id_for_label }}">{{ form.break_after_lessons.label }}</label>
+                    {{ form.break_after_lessons }}
+                    {% if form.break_after_lessons.help_text %}<p class="mt-1 text-xs text-slate-500">{{ form.break_after_lessons.help_text }}</p>{% endif %}
+                    {% if form.break_after_lessons.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.break_after_lessons.errors|striptags }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="{{ form.break_duration_minutes.id_for_label }}">{{ form.break_duration_minutes.label }}</label>
+                    {{ form.break_duration_minutes }}
+                    {% if form.break_duration_minutes.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.break_duration_minutes.errors|striptags }}</p>{% endif %}
+                </div>
+                <div class="space-y-3 rounded-3xl border border-slate-100 bg-slate-50 p-4">
+                    <label class="flex items-start gap-3 text-sm text-slate-700" for="{{ form.randomize.id_for_label }}">
+                        {{ form.randomize }}
+                        <span>
+                            <span class="block font-medium">{{ form.randomize.label }}</span>
+                            {% if form.randomize.help_text %}<span class="mt-1 block text-xs text-slate-500">{{ form.randomize.help_text }}</span>{% endif %}
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-3 text-sm text-slate-700" for="{{ form.overwrite_existing.id_for_label }}">
+                        {{ form.overwrite_existing }}
+                        <span>
+                            <span class="block font-medium">{{ form.overwrite_existing.label }}</span>
+                            {% if form.overwrite_existing.help_text %}<span class="mt-1 block text-xs text-slate-500">{{ form.overwrite_existing.help_text }}</span>{% endif %}
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        {% if preview %}
+            <section class="rounded-[28px] border border-white/80 bg-white p-6 shadow-soft">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Preview jadwal</p>
+                        <h3 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">{{ preview.settings.school_class_name }} - {{ preview.settings.academic_year_name }}</h3>
+                        <p class="mt-2 text-sm text-slate-500">
+                            {{ preview.subject_pool_count }} jam mapel disiapkan · {{ preview.filled_lesson_count }} slot terisi · {{ preview.unfilled_lesson_count }} slot kosong
+                        </p>
+                    </div>
+                    <div class="rounded-3xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        <p><strong class="text-slate-950">Jadwal lama:</strong> akan ditimpa saat disimpan</p>
+                        <p class="mt-1">Seed preview: {{ preview.seed }}</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 space-y-4">
+                    {% for day in preview.days %}
+                        <article class="overflow-hidden rounded-[24px] border border-slate-100">
+                            <div class="border-b border-slate-100 bg-slate-50 px-4 py-3">
+                                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{{ day.day_label }}</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-slate-200">
+                                    <thead class="bg-white">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Jam ke-</th>
+                                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Waktu</th>
+                                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Keterangan</th>
+                                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Guru</th>
+                                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Catatan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 bg-white">
+                                        {% for row in day.rows %}
+                                            <tr class="{% if row.kind == 'break' %}bg-amber-50{% endif %}">
+                                                <td class="px-4 py-3 text-sm font-medium text-slate-600">
+                                                    {% if row.kind == 'lesson' %}{{ row.lesson_order }}{% else %}-{% endif %}
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-slate-600">{{ row.start_time }} - {{ row.end_time }}</td>
+                                                <td class="px-4 py-3 text-sm text-slate-900">
+                                                    {% if row.kind == 'lesson' %}
+                                                        <p class="font-semibold">{{ row.class_subject_name|default:"Belum terisi" }}</p>
+                                                    {% else %}
+                                                        <p class="font-semibold">{{ row.label }}</p>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-slate-600">
+                                                    {% if row.kind == 'lesson' %}
+                                                        {{ row.teacher_name|default:"-" }}
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-slate-500">
+                                                    {% if row.kind == 'break' %}
+                                                        {{ row.notes }}
+                                                    {% elif row.class_subject_name %}
+                                                        {{ row.room_name|default:"-" }}
+                                                    {% else %}
+                                                        Slot belum terisi
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        {% else %}
+            <section class="rounded-[28px] border border-dashed border-slate-300 bg-white p-8 text-sm text-slate-500 shadow-soft">
+                Belum ada preview jadwal. Klik <strong class="text-slate-900">Generate preview</strong> untuk melihat hasil susunan jadwal PBM.
+            </section>
+        {% endif %}
+    </form>
+</section>
+{% endblock %}

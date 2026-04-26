@@ -271,6 +271,91 @@ class AcademicDetailViewTests(TestCase):
         self.assertContains(response, "Bahasa Indonesia")
         self.assertContains(response, "Ruang A1")
 
+    def test_pbm_schedule_generator_builds_preview(self):
+        subject_a = Subject.objects.create(name="Matematika", code="MTK", category=Subject.Category.GENERAL)
+        subject_b = Subject.objects.create(name="IPA", code="IPA", category=Subject.Category.GENERAL)
+        ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject_a,
+            teacher=self.homeroom_teacher,
+            minimum_score=75,
+            weekly_hours=2,
+        )
+        ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject_b,
+            teacher=self.other_teacher,
+            minimum_score=75,
+            weekly_hours=2,
+        )
+
+        response = self.client.post(
+            reverse("academics:pbm_schedule_generate"),
+            {
+                "academic_year": str(self.academic_year.pk),
+                "school_class": str(self.school_class.pk),
+                "start_time": "07:30",
+                "end_time": "10:30",
+                "lesson_duration_minutes": 40,
+                "break_after_lessons": 2,
+                "break_duration_minutes": 30,
+                "randomize": "on",
+                "overwrite_existing": "on",
+                "action": "generate",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Preview jadwal")
+        self.assertContains(response, "Generate ulang")
+        self.assertContains(response, "Istirahat")
+        self.assertContains(response, "Matematika")
+        self.assertContains(response, "IPA")
+
+    def test_pbm_schedule_generator_can_save_preview(self):
+        subject = Subject.objects.create(name="Bahasa Inggris", code="BIG", category=Subject.Category.GENERAL)
+        ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject,
+            teacher=self.homeroom_teacher,
+            minimum_score=75,
+            weekly_hours=3,
+        )
+
+        self.client.post(
+            reverse("academics:pbm_schedule_generate"),
+            {
+                "academic_year": str(self.academic_year.pk),
+                "school_class": str(self.school_class.pk),
+                "start_time": "07:30",
+                "end_time": "11:00",
+                "lesson_duration_minutes": 40,
+                "break_after_lessons": 2,
+                "break_duration_minutes": 30,
+                "randomize": "on",
+                "overwrite_existing": "on",
+                "action": "generate",
+            },
+        )
+        preview = self.client.session.get("pbm_schedule_preview")
+        self.assertIsNotNone(preview)
+
+        response = self.client.post(
+            reverse("academics:pbm_schedule_generate"),
+            {
+                "preview_token": preview["token"],
+                "action": "save",
+            },
+        )
+
+        self.assertRedirects(response, reverse("academics:pbm_schedule_list"))
+        self.assertTrue(
+            PbmScheduleSlot.objects.filter(
+                academic_year=self.academic_year,
+                school_class=self.school_class,
+            ).exists()
+        )
+
     def test_new_academic_year_can_clone_previous_study_groups(self):
         target_school_class = SchoolClass.objects.create(name="Kelas 8", level_order=8)
 
