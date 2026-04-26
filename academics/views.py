@@ -1,4 +1,5 @@
 import random
+import random
 import re
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
@@ -14,6 +15,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import CustomUser
 from students.models import StudentProfile
+from teachers.models import TeacherProfile
 
 from .curriculum import SUBJECT_PRESETS
 from .forms import (
@@ -427,6 +429,11 @@ def curriculum_dashboard(request):
             "title": "Beban guru",
             "description": "Pastikan setiap pengampu memiliki beban JTM yang jelas sebelum jadwal disusun.",
             "url": "teachers:teaching_assignments",
+        },
+        {
+            "title": "Rekap jam PBM",
+            "description": "Lihat total JTM per guru sebelum disusun menjadi jadwal mingguan.",
+            "url": "academics:curriculum_teacher_hours",
         },
         {
             "title": "Jadwal PBM",
@@ -973,6 +980,75 @@ def pbm_schedule_generate(request):
         "preview_token": preview_payload["token"] if preview_payload else "",
     }
     return render(request, "academics/pbm_schedule_generate.html", context)
+
+
+@login_required
+def curriculum_teacher_hours(request):
+    query = request.GET.get("q", "").strip()
+    school_class_id = request.GET.get("class", "").strip()
+
+    teachers = TeacherProfile.objects.select_related("user").annotate(
+        active_assignment_count=Count("class_subjects", filter=Q(class_subjects__is_active=True), distinct=True),
+        total_weekly_hours=Sum("class_subjects__weekly_hours", filter=Q(class_subjects__is_active=True)),
+    ).filter(is_active=True)
+
+    if query:
+        teachers = teachers.filter(
+            Q(user__full_name__icontains=query)
+            | Q(user__username__icontains=query)
+            | Q(nip__icontains=query)
+            | Q(subject__icontains=query)
+            | Q(class_subjects__subject__name__icontains=query)
+            | Q(class_subjects__school_class__name__icontains=query)
+        ).distinct()
+
+    if school_class_id:
+        teachers = teachers.filter(class_subjects__school_class_id=school_class_id)
+
+    teachers = teachers.distinct()
+    teachers = teachers.order_by("user__full_name")
+
+    grouped_rows = []
+    for teacher in teachers:
+        assignments = list(
+            teacher.class_subjects.select_related("school_class", "subject")
+            .filter(is_active=True)
+            .order_by("school_class__level_order", "subject__sort_order", "subject__name")
+        )
+        if not assignments:
+            continue
+
+        assignment_rows = []
+        for assignment in assignments:
+            assignment_rows.append(
+                {
+                    "school_class_name": assignment.school_class.name,
+                    "subject_name": assignment.subject.name,
+                    "weekly_hours": assignment.weekly_hours,
+                    "minimum_score": assignment.minimum_score,
+                    "teacher_name": teacher.user.full_name,
+                }
+            )
+
+        grouped_rows.append(
+            {
+                "teacher": teacher,
+                "rows": assignment_rows,
+                "assignment_count": len(assignment_rows),
+                "total_weekly_hours": sum(row["weekly_hours"] for row in assignment_rows),
+            }
+        )
+
+    context = {
+        "query": query,
+        "school_classes": SchoolClass.objects.filter(is_active=True).order_by("level_order", "name"),
+        "selected_class": school_class_id,
+        "grouped_rows": grouped_rows,
+        "teacher_count": len(grouped_rows),
+        "assignment_count": sum(group["assignment_count"] for group in grouped_rows),
+        "total_weekly_hours": sum(group["total_weekly_hours"] for group in grouped_rows),
+    }
+    return render(request, "academics/curriculum_teacher_hours.html", context)
 
 
 @login_required

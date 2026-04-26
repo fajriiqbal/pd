@@ -51,7 +51,7 @@
     {% if user.is_authenticated %}
         <div class="min-h-screen">
             <div class="mx-auto flex min-h-screen max-w-[1600px] flex-col lg:flex-row">
-                <aside class="border-b border-[#d7ddd8] bg-[linear-gradient(180deg,_rgba(232,238,234,0.96),_rgba(222,230,225,0.92))] backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:w-[255px] lg:overflow-y-auto lg:border-b-0 lg:border-r">
+                <aside data-sidebar-scroll class="border-b border-[#d7ddd8] bg-[linear-gradient(180deg,_rgba(232,238,234,0.96),_rgba(222,230,225,0.92))] backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:w-[255px] lg:overflow-y-auto lg:border-b-0 lg:border-r">
                     <div class="flex h-full flex-col px-4 py-5">
                         <div class="px-3 pb-5">
                                 <a href="{% url 'dashboard:home' %}" class="flex items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-white/55">
@@ -88,7 +88,7 @@
                                         <a href="{% url 'students:mutation_list' %}" class="{% if '/students/mutations/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Mutasi siswa</a>
                                         <a href="{% url 'students:promotion_list' %}" class="{% if '/students/promotions/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Kenaikan kelas</a>
                                         <a href="{% url 'students:backup_restore' %}" class="{% if '/students/backup/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Backup & restore</a>
-                                        <a href="{% url 'academics:overview' %}" class="{% if '/academics/' in request.path and '/academics/years/' not in request.path and '/academics/curriculum/' not in request.path and '/academics/subjects/' not in request.path and '/academics/class-subjects/' not in request.path and '/academics/ledgers/' not in request.path and '/academics/pbm-schedule/' not in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Kelas & rombel</a>
+                                        <a href="{% url 'academics:overview' %}" class="{% if '/academics/' in request.path and '/academics/years/' not in request.path and '/academics/curriculum/' not in request.path and '/academics/subjects/' not in request.path and '/academics/class-subjects/' not in request.path and '/academics/ledgers/' not in request.path and '/academics/pbm-schedule/' not in request.path and '/academics/rekap-jam-pbm/' not in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Kelas & rombel</a>
                                         <a href="{% url 'academics:subject_list' %}" class="{% if '/academics/subjects/' in request.path or '/academics/class-subjects/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Mata pelajaran</a>
                                         <a href="{% url 'academics:ledger_list' %}" class="{% if '/academics/ledgers/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Ledger nilai</a>
                                     </div>
@@ -105,13 +105,14 @@
                                         <a href="{% url 'teachers:additional_tasks' %}" class="{% if '/teachers/additional-tasks/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Tugas tambahan</a>
                                     </div>
                                 </details>
-                                <details class="rounded-[24px] {% if '/academics/curriculum/' in request.path or '/academics/pbm-schedule/' in request.path %}bg-white/55{% endif %} p-1" {% if '/academics/curriculum/' in request.path or '/academics/pbm-schedule/' in request.path %}open{% endif %}>
+                                <details class="rounded-[24px] {% if '/academics/curriculum/' in request.path or '/academics/pbm-schedule/' in request.path or '/academics/rekap-jam-pbm/' in request.path %}bg-white/55{% endif %} p-1" {% if '/academics/curriculum/' in request.path or '/academics/pbm-schedule/' in request.path or '/academics/rekap-jam-pbm/' in request.path %}open{% endif %}>
                                     <summary class="cursor-pointer list-none rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 transition hover:text-slate-900">
                                         Kurikulum
                                     </summary>
                                     <div class="space-y-1 px-2 pb-2">
-                                        <a href="{% url 'academics:curriculum' %}" class="{% if '/academics/curriculum/' in request.path and '/academics/pbm-schedule/' not in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Dashboard kurikulum</a>
+                                        <a href="{% url 'academics:curriculum' %}" class="{% if request.path == '/academics/curriculum/' %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Dashboard kurikulum</a>
                                         <a href="{% url 'academics:curriculum_structure' %}" class="{% if '/academics/curriculum/structure/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Struktur kurikulum</a>
+                                        <a href="{% url 'academics:curriculum_teacher_hours' %}" class="{% if '/academics/rekap-jam-pbm/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Rekap jam PBM</a>
                                         <a href="{% url 'academics:pbm_schedule_list' %}" class="{% if '/academics/pbm-schedule/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Jadwal PBM</a>
                                         <a href="{% url 'academics:pbm_schedule_generate' %}" class="{% if '/academics/pbm-schedule/generate/' in request.path %}bg-slate-900 text-white shadow-soft{% else %}text-slate-500 hover:bg-white/80 hover:text-slate-900{% endif %} block rounded-2xl px-3 py-2 text-sm transition">Generate otomatis</a>
                                     </div>
@@ -250,6 +251,18 @@
     <script>
         (() => {
             document.body.classList.add("is-ready");
+
+            const sidebar = document.querySelector("[data-sidebar-scroll]");
+            const sidebarScrollKey = "pdm-sidebar-scroll-top";
+            if (sidebar) {
+                const savedScrollTop = window.sessionStorage.getItem(sidebarScrollKey);
+                if (savedScrollTop !== null) {
+                    sidebar.scrollTop = Number(savedScrollTop) || 0;
+                }
+                sidebar.addEventListener("scroll", () => {
+                    window.sessionStorage.setItem(sidebarScrollKey, String(sidebar.scrollTop));
+                }, { passive: true });
+            }
 
             const connectionBadge = document.querySelector("[data-connection-status]");
             const connectionLabel = document.querySelector("[data-connection-label]");

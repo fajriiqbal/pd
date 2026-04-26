@@ -356,6 +356,33 @@ class AcademicDetailViewTests(TestCase):
             ).exists()
         )
 
+    def test_curriculum_teacher_hours_page_lists_teacher_totals(self):
+        subject_a = Subject.objects.create(name="Matematika", code="MTK", category=Subject.Category.GENERAL)
+        subject_b = Subject.objects.create(name="IPA", code="IPA", category=Subject.Category.GENERAL)
+        ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject_a,
+            teacher=self.homeroom_teacher,
+            minimum_score=75,
+            weekly_hours=4,
+        )
+        ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject_b,
+            teacher=self.homeroom_teacher,
+            minimum_score=75,
+            weekly_hours=3,
+        )
+
+        response = self.client.get(reverse("academics:curriculum_teacher_hours"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Rekap Jam PBM")
+        self.assertContains(response, "Guru Wali")
+        self.assertContains(response, "7")
+        self.assertContains(response, "Matematika")
+        self.assertContains(response, "IPA")
+
     def test_new_academic_year_can_clone_previous_study_groups(self):
         target_school_class = SchoolClass.objects.create(name="Kelas 8", level_order=8)
 

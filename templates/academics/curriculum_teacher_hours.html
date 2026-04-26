@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Rekap Jam PBM | PDM{% endblock %}
+{% block page_kicker %}Kurikulum{% endblock %}
+{% block page_title %}Rekap Jam PBM{% endblock %}
+{% block page_description %}Rekap beban jam mengajar guru per mapel dan per kelas untuk mengecek total JTM sebelum jadwal disusun.{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white p-6 shadow-soft lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-2xl">
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Rekap guru</p>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Total jam mengajar per guru</h2>
+            <p class="mt-2 text-sm leading-7 text-slate-500">
+                Halaman ini merangkum mapel per guru, lengkap dengan kelas, KKM, dan jumlah JTM sehingga mudah dicocokkan dengan struktur kurikulum dan jadwal PBM.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'academics:curriculum' %}" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Kembali ke kurikulum</a>
+            <a href="{% url 'teachers:teaching_assignments' %}" class="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800">Buka mapel diajar</a>
+        </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Guru terdata</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ teacher_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Total mapel diajar</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ assignment_count }}</p>
+        </article>
+        <article class="rounded-[28px] border border-white/80 bg-white p-5 shadow-soft">
+            <p class="text-sm text-slate-500">Total JTM</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ total_weekly_hours }}</p>
+        </article>
+    </div>
+
+    <section class="rounded-[28px] border border-white/80 bg-white p-6 shadow-soft">
+        <form method="get" class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr_auto]">
+            <div>
+                <label class="text-sm font-medium text-slate-700" for="search-teacher">Cari guru/mapel</label>
+                <input id="search-teacher" type="text" name="q" value="{{ query }}" placeholder="Cari nama guru, NIP, mapel, atau kelas" class="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3">
+            </div>
+            <div>
+                <label class="text-sm font-medium text-slate-700" for="filter-class">Kelas</label>
+                <select id="filter-class" name="class" class="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3">
+                    <option value="">Semua kelas</option>
+                    {% for school_class in school_classes %}
+                        <option value="{{ school_class.pk }}" {% if selected_class == school_class.pk|stringformat:"s" %}selected{% endif %}>{{ school_class.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800">Tampilkan</button>
+            </div>
+        </form>
+    </section>
+
+    <div class="space-y-6">
+        {% for group in grouped_rows %}
+            <section class="overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-soft">
+                <div class="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{{ group.teacher.user.full_name }}</p>
+                        <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">{{ group.teacher.nip|default:"NIP belum diisi" }}</h3>
+                        <p class="mt-1 text-sm text-slate-500">{{ group.assignment_count }} mapel diajar · {{ group.total_weekly_hours }} JTM</p>
+                    </div>
+                    <a href="{% url 'teachers:edit' group.teacher.pk %}" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Edit guru</a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">No</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Mata pelajaran</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Kelas</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">KKM</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">JTM</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Paraf</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for row in group.rows %}
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 text-sm text-slate-500">{{ forloop.counter }}</td>
+                                    <td class="px-6 py-4">
+                                        <p class="font-semibold text-slate-950">{{ row.subject_name }}</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">{{ row.school_class_name }}</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">{{ row.minimum_score }}</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">{{ row.weekly_hours }}</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">................</td>
+                                </tr>
+                            {% endfor %}
+                            <tr class="bg-slate-50">
+                                <td colspan="4" class="px-6 py-4 text-right text-sm font-semibold text-slate-700">Total JTM</td>
+                                <td class="px-6 py-4 text-sm font-semibold text-slate-950">{{ group.total_weekly_hours }}</td>
+                                <td class="px-6 py-4"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% empty %}
+            <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-sm text-slate-500 shadow-soft">
+                Belum ada mapel diajar aktif yang bisa direkap.
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

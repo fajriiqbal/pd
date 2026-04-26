@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.overview, name="overview"),
     path("curriculum/", views.curriculum_dashboard, name="curriculum"),
     path("curriculum/structure/", views.curriculum_structure, name="curriculum_structure"),
+    path("curriculum/rekap-jam-pbm/", views.curriculum_teacher_hours, name="curriculum_teacher_hours"),
     path("curriculum/pbm-schedule/", views.pbm_schedule_list, name="pbm_schedule_list"),
     path("curriculum/pbm-schedule/generate/", views.pbm_schedule_generate, name="pbm_schedule_generate"),
     path("curriculum/pbm-schedule/add/", views.pbm_schedule_create, name="pbm_schedule_add"),

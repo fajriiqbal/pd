@@ -256,7 +256,7 @@
             <a href="{% url 'academics:curriculum' %}" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Buka kurikulum</a>
         </div>
 
-        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <a href="{% url 'academics:curriculum' %}" class="rounded-2xl border border-white/80 bg-white/85 px-4 py-4 shadow-soft transition hover:border-emerald-200 hover:bg-white">
                 <p class="text-sm text-slate-500">Dashboard kurikulum</p>
                 <p class="mt-2 font-medium text-slate-900">Ringkasan kerja kurikulum</p>
@@ -264,6 +264,10 @@
             <a href="{% url 'academics:curriculum_structure' %}" class="rounded-2xl border border-white/80 bg-white/85 px-4 py-4 shadow-soft transition hover:border-emerald-200 hover:bg-white">
                 <p class="text-sm text-slate-500">Struktur kurikulum</p>
                 <p class="mt-2 font-medium text-slate-900">Mapel, guru, KKM, dan JTM</p>
+            </a>
+            <a href="{% url 'academics:curriculum_teacher_hours' %}" class="rounded-2xl border border-white/80 bg-white/85 px-4 py-4 shadow-soft transition hover:border-emerald-200 hover:bg-white">
+                <p class="text-sm text-slate-500">Rekap jam PBM</p>
+                <p class="mt-2 font-medium text-slate-900">Total jam mengajar per guru</p>
             </a>
             <a href="{% url 'academics:pbm_schedule_list' %}" class="rounded-2xl border border-white/80 bg-white/85 px-4 py-4 shadow-soft transition hover:border-emerald-200 hover:bg-white">
                 <p class="text-sm text-slate-500">Jadwal PBM</p>
