@@ -42,6 +42,18 @@ class StudentImportUtilsTests(TestCase):
             end_date="2026-06-30",
             is_active=True,
         )
+        SchoolIdentity.objects.create(
+            institution_name="MTs Sunan Kalijaga",
+            npsn="12345678",
+            nsm="MTs123456",
+            legal_name="MTs Sunan Kalijaga Tulung",
+            address="Jl. Pendidikan No. 1",
+            village="Tulung",
+            district="Kedungwaru",
+            regency="Tulungagung",
+            province="Jawa Timur",
+            postal_code="66215",
+        )
 
     def _build_workbook_file(self, sheet_title, headers, rows):
         workbook = Workbook()
@@ -103,7 +115,7 @@ class StudentImportUtilsTests(TestCase):
         self.assertEqual(result["failed"], 0)
 
         student = StudentProfile.objects.select_related("user").get(nisn="88776655")
-        self.assertIsNone(student.nis)
+        self.assertTrue(student.nis.startswith("MTs12345624"))
         self.assertEqual(student.user.full_name, "Ahmad Tanpa NIS")
 
     def test_import_update_keeps_existing_nis_when_row_matches_by_nisn(self):
@@ -161,6 +173,23 @@ class StudentImportUtilsTests(TestCase):
         self.assertEqual(result["created"], 1)
         student = StudentProfile.objects.get(nisn="99887700")
         self.assertEqual(student.entry_year, 2024)
+
+    def test_import_uses_entry_year_column_when_present(self):
+        uploaded_file = self._build_workbook_file(
+            sheet_title="Kelas 7 - 7A",
+            headers=["Nama Lengkap", "NISN", "Jenis Kelamin", "Tanggal Lahir", "Tahun Masuk"],
+            rows=[["Ahmad Import Manual", "99887701", "L", "2012-05-10", "2026"]],
+        )
+
+        preview = build_student_import_preview(uploaded_file, "rahasia123")
+        self.assertTrue(preview["ok"])
+        self.assertEqual(preview["rows"][0]["entry_year"], 2026)
+
+        result = execute_student_import(preview)
+        self.assertEqual(result["created"], 1)
+        student = StudentProfile.objects.get(nisn="99887701")
+        self.assertEqual(student.entry_year, 2026)
+        self.assertTrue(student.nis.startswith("MTs12345626"))
 
 
 class StudentListAndBulkDeleteTests(TestCase):

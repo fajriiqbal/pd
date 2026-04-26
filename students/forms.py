@@ -54,7 +54,7 @@ class BackupRestoreUploadForm(forms.Form):
 class StudentImportUploadForm(forms.Form):
     excel_file = forms.FileField(
         label="File Excel siswa",
-        help_text="Gunakan file .xlsx dengan beberapa sheet, misalnya Kelas 7 - 7A, Kelas 7 - 7B, dan seterusnya.",
+        help_text="Gunakan file .xlsx dengan beberapa sheet, misalnya Kelas 7 - 7A, Kelas 7 - 7B, dan seterusnya. Jika ada kolom Tahun Masuk / Angkatan, sistem akan memakainya untuk NIS.",
         widget=forms.ClearableFileInput(
             attrs={
                 "class": BASE_INPUT_CLASS,

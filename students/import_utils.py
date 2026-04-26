@@ -55,6 +55,12 @@ HEADER_ALIASES = {
     "status orang tua": "family_status",
     "status keluarga": "family_status",
     "kondisi orang tua": "family_status",
+    "entry year": "entry_year",
+    "entry year siswa": "entry_year",
+    "tahun masuk": "entry_year",
+    "tahun masuk siswa": "entry_year",
+    "tahun angkatan": "entry_year",
+    "angkatan": "entry_year",
 }
 
 
@@ -161,6 +167,28 @@ def _parse_family_status(value):
         return StudentProfile.FamilyStatus.UNDER_GUARDIAN, None
 
     return None, f"Status orang tua tidak dikenali: {value}"
+
+
+def _parse_entry_year(value):
+    if value in (None, ""):
+        return None
+
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, float):
+        if value.is_integer():
+            return int(value)
+        return None
+
+    text = _clean_text(value)
+    if not text:
+        return None
+
+    match = re.search(r"(20\d{2})", text)
+    if match:
+        return int(match.group(1))
+    return None
 
 
 def _split_group_label(label):
@@ -358,6 +386,10 @@ def build_student_import_preview(uploaded_file, default_password):
                 _append_error(errors, sheet.title, row_idx, "Format kelas/rombel tidak dikenali.")
                 continue
 
+            entry_year = _parse_entry_year(row_values.get("entry_year"))
+            if not entry_year:
+                entry_year = _infer_entry_year_from_school_class(school_class_name, active_year)
+
             existing_student, conflict_error = _resolve_existing_student(
                 nis=nis,
                 nisn=nisn,
@@ -426,7 +458,7 @@ def build_student_import_preview(uploaded_file, default_password):
                     "study_group_name": study_group_name,
                     "group_label": group_label,
                     "is_active": is_active,
-                    "entry_year": _infer_entry_year_from_school_class(school_class_name, active_year),
+                    "entry_year": entry_year,
                 }
             )
 
