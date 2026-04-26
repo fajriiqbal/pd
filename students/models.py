@@ -69,7 +69,34 @@ class StudentProfile(models.Model):
     def save(self, *args, **kwargs):
         self.nis = self.nis or None
         self.nisn = self.nisn or None
+        if not self.nis:
+            generated_nis = self._generate_nis()
+            if generated_nis:
+                self.nis = generated_nis
         super().save(*args, **kwargs)
+
+    def _generate_nis(self) -> str | None:
+        from institution.models import SchoolIdentity
+
+        identity = SchoolIdentity.objects.first()
+        prefix = (identity.nsm if identity and identity.nsm else "").strip()
+        if not prefix:
+            return None
+
+        existing_numbers = []
+        for existing_nis in (
+            StudentProfile.objects.exclude(pk=self.pk)
+            .exclude(nis__isnull=True)
+            .exclude(nis="")
+            .filter(nis__startswith=prefix)
+            .values_list("nis", flat=True)
+        ):
+            suffix = str(existing_nis)[len(prefix):]
+            if suffix.isdigit():
+                existing_numbers.append(int(suffix))
+
+        next_number = (max(existing_numbers) if existing_numbers else 0) + 1
+        return f"{prefix}{next_number:04d}"
 
     @property
     def current_class_label(self) -> str:

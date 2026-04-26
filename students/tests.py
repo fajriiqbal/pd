@@ -249,19 +249,22 @@ class StudentListAndBulkDeleteTests(TestCase):
             is_active=is_active,
         )
 
-    def test_student_list_filters_by_class_status_and_missing_nis(self):
+    def test_student_list_filters_by_class_status_and_filled_nis(self):
         response = self.client.get(
             reverse("students:list"),
             {
                 "class": str(self.school_class_8.id),
                 "status": "inactive",
-                "nis_status": "missing",
+                "nis_status": "filled",
             },
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Siswa Tanpa NIS")
         self.assertNotContains(response, "Siswa Kelas Tujuh")
+        self.assertTrue(self.student_8a_without_nis.nis)
+        self.assertTrue(self.student_8a_without_nis.nis.startswith("MTs123456"))
+        self.assertEqual(len(self.student_8a_without_nis.nis), len("MTs123456") + 4)
 
     def test_student_list_rombel_options_follow_selected_class_and_show_student_totals(self):
         group_7b = StudyGroup.objects.create(

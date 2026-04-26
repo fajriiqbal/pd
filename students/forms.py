@@ -138,7 +138,7 @@ class StudentRecordForm(forms.ModelForm):
             "is_active",
         ]
         widgets = {
-            "nis": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Nomor Induk Siswa"}),
+            "nis": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Kosongkan agar diisi otomatis"}),
             "nisn": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Nomor Induk Siswa Nasional"}),
             "gender": forms.Select(attrs={"class": BASE_INPUT_CLASS}),
             "birth_place": forms.TextInput(attrs={"class": BASE_INPUT_CLASS, "placeholder": "Tempat lahir"}),
@@ -189,6 +189,8 @@ class StudentRecordForm(forms.ModelForm):
         else:
             self.fields["is_school_active"].initial = True
             self.fields["is_active"].initial = True
+
+        self.fields["nis"].help_text = "Kosongkan agar sistem mengisi otomatis dari NSM madrasah + nomor urut 4 digit."
 
     def clean_username(self):
         username = self.cleaned_data["username"].strip()
