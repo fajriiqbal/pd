@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, Prefetch, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import CustomUser
@@ -192,6 +192,91 @@ def overview(request):
         "homeroom_count": StudyGroup.objects.filter(homeroom_teacher__isnull=False).count(),
     }
     return render(request, "academics/overview.html", context)
+
+
+@login_required
+def curriculum_dashboard(request):
+    query = request.GET.get("q", "").strip()
+    class_subject_qs = (
+        ClassSubject.objects.select_related("subject", "teacher__user")
+        .filter(is_active=True)
+        .order_by("subject__sort_order", "subject__name")
+    )
+    classes = (
+        SchoolClass.objects.annotate(
+            active_group_count=Count("study_groups", filter=Q(study_groups__is_active=True), distinct=True),
+            active_class_subject_count=Count("class_subjects", filter=Q(class_subjects__is_active=True), distinct=True),
+            assigned_teacher_count=Count(
+                "class_subjects__teacher",
+                filter=Q(class_subjects__is_active=True, class_subjects__teacher__isnull=False),
+                distinct=True,
+            ),
+            total_weekly_hours=Sum("class_subjects__weekly_hours", filter=Q(class_subjects__is_active=True)),
+        )
+        .prefetch_related(Prefetch("class_subjects", queryset=class_subject_qs))
+        .order_by("level_order", "name")
+    )
+
+    if query:
+        classes = classes.filter(
+            Q(name__icontains=query)
+            | Q(description__icontains=query)
+            | Q(class_subjects__subject__name__icontains=query)
+            | Q(class_subjects__teacher__user__full_name__icontains=query)
+        ).distinct()
+
+    subject_stats = {
+        item["curriculum"]: item
+        for item in Subject.objects.values("curriculum").annotate(
+            total=Count("id"),
+            active_total=Count("id", filter=Q(is_active=True)),
+        )
+    }
+    curriculum_breakdown = [
+        {
+            "label": label,
+            "key": key,
+            "total": subject_stats.get(key, {}).get("total", 0),
+            "active_total": subject_stats.get(key, {}).get("active_total", 0),
+        }
+        for key, label in Subject.Curriculum.choices
+        if key != Subject.Curriculum.SHARED
+    ]
+    steps = [
+        {
+            "title": "Master mapel",
+            "description": "Pilih katalog mapel K13, Merdeka, atau mapel khusus agar struktur mudah dipakai ulang.",
+            "url": "academics:subject_list",
+        },
+        {
+            "title": "Struktur kurikulum",
+            "description": "Hubungkan mapel dengan kelas, guru pengampu, KKM, dan jam pelajaran.",
+            "url": "academics:subject_list",
+        },
+        {
+            "title": "Beban guru",
+            "description": "Pastikan setiap pengampu memiliki beban JTM yang jelas sebelum jadwal disusun.",
+            "url": "teachers:teaching_assignments",
+        },
+        {
+            "title": "Jadwal PBM",
+            "description": "Gunakan struktur tersebut untuk menyusun jadwal belajar mengajar mingguan.",
+            "url": "teachers:teaching_assignments",
+        },
+    ]
+    context = {
+        "query": query,
+        "steps": steps,
+        "classes": classes,
+        "subject_stats": subject_stats,
+        "curriculum_breakdown": curriculum_breakdown,
+        "class_count": SchoolClass.objects.filter(is_active=True).count(),
+        "active_subject_count": Subject.objects.filter(is_active=True).count(),
+        "class_subject_count": ClassSubject.objects.filter(is_active=True).count(),
+        "assigned_teacher_count": ClassSubject.objects.filter(is_active=True, teacher__isnull=False).values("teacher").distinct().count(),
+        "total_weekly_hours": ClassSubject.objects.filter(is_active=True).aggregate(total=Sum("weekly_hours"))["total"] or 0,
+    }
+    return render(request, "academics/curriculum_dashboard.html", context)
 
 
 @login_required

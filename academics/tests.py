@@ -207,6 +207,24 @@ class AcademicDetailViewTests(TestCase):
         self.assertEqual(subject.curriculum, Subject.Curriculum.K13)
         self.assertEqual(subject.category, Subject.Category.RELIGION)
 
+    def test_curriculum_dashboard_shows_workflow_summary(self):
+        subject = Subject.objects.create(name="Matematika", code="MTK", category=Subject.Category.GENERAL)
+        ClassSubject.objects.create(
+            school_class=self.school_class,
+            subject=subject,
+            teacher=self.homeroom_teacher,
+            minimum_score=75,
+            weekly_hours=4,
+        )
+
+        response = self.client.get(reverse("academics:curriculum"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kurikulum")
+        self.assertContains(response, "Struktur kurikulum")
+        self.assertContains(response, "Matematika")
+        self.assertContains(response, "Beban guru")
+
     def test_new_academic_year_can_clone_previous_study_groups(self):
         target_school_class = SchoolClass.objects.create(name="Kelas 8", level_order=8)
 
